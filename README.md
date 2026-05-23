@@ -10,7 +10,6 @@ Demo educativa con backend Express.js funcional + frontend para las 5 categoría
 ## Levantar los labs
 
 ```bash
-cd owasp-labs
 docker compose up --build
 ```
 
