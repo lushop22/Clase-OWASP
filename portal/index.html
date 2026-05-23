@@ -97,8 +97,8 @@ footer{text-align:center;padding:2rem;color:#475569;font-size:.8rem}
       <div class="card-body">
         <p class="card-desc">IDOR (Insecure Direct Object Reference): al cambiar el parámetro <code>?id=</code> en la URL se accede a perfiles, facturas o datos de otros usuarios sin ningún control.</p>
         <div class="ports">
-          <a class="port-btn vuln-btn" href="http://localhost:3001" target="_blank">⚠ Vulnerable<span class="port-num">:3001</span></a>
-          <a class="port-btn safe-btn" href="http://localhost:3002" target="_blank">✓ Segura<span class="port-num">:3002</span></a>
+          <a class="port-btn vuln-btn" data-port="3001" target="_blank">⚠ Vulnerable<span class="port-num">:3001</span></a>
+          <a class="port-btn safe-btn" data-port="3002" target="_blank">✓ Segura<span class="port-num">:3002</span></a>
         </div>
       </div>
     </div>
@@ -114,8 +114,8 @@ footer{text-align:center;padding:2rem;color:#475569;font-size:.8rem}
       <div class="card-body">
         <p class="card-desc">Endpoint <code>/debug</code> expuesto con env vars y contraseñas, stack traces con configuración interna, panel admin sin autenticación y CORS demasiado permisivo.</p>
         <div class="ports">
-          <a class="port-btn vuln-btn" href="http://localhost:3003" target="_blank">⚠ Vulnerable<span class="port-num">:3003</span></a>
-          <a class="port-btn safe-btn" href="http://localhost:3004" target="_blank">✓ Segura<span class="port-num">:3004</span></a>
+          <a class="port-btn vuln-btn" data-port="3003" target="_blank">⚠ Vulnerable<span class="port-num">:3003</span></a>
+          <a class="port-btn safe-btn" data-port="3004" target="_blank">✓ Segura<span class="port-num">:3004</span></a>
         </div>
       </div>
     </div>
@@ -131,8 +131,8 @@ footer{text-align:center;padding:2rem;color:#475569;font-size:.8rem}
       <div class="card-body">
         <p class="card-desc"><strong>Prototype Pollution</strong> via librería de merge desactualizada (simula CVE-2019-10744 lodash). Un payload <code>{"__proto__":{"isAdmin":true}}</code> contamina <code>Object.prototype</code> en el servidor y escala privilegios.</p>
         <div class="ports">
-          <a class="port-btn vuln-btn" href="http://localhost:3005" target="_blank">⚠ Vulnerable<span class="port-num">:3005</span></a>
-          <a class="port-btn safe-btn" href="http://localhost:3006" target="_blank">✓ Segura<span class="port-num">:3006</span></a>
+          <a class="port-btn vuln-btn" data-port="3005" target="_blank">⚠ Vulnerable<span class="port-num">:3005</span></a>
+          <a class="port-btn safe-btn" data-port="3006" target="_blank">✓ Segura<span class="port-num">:3006</span></a>
         </div>
       </div>
     </div>
@@ -148,8 +148,8 @@ footer{text-align:center;padding:2rem;color:#475569;font-size:.8rem}
       <div class="card-body">
         <p class="card-desc">Contraseñas almacenadas con <code>MD5</code> sin sal: crackeables en &lt;1ms con rainbow tables. La versión segura usa <code>bcrypt</code> con cost=12 — infactible crackear en tiempo razonable.</p>
         <div class="ports">
-          <a class="port-btn vuln-btn" href="http://localhost:3007" target="_blank">⚠ Vulnerable<span class="port-num">:3007</span></a>
-          <a class="port-btn safe-btn" href="http://localhost:3008" target="_blank">✓ Segura<span class="port-num">:3008</span></a>
+          <a class="port-btn vuln-btn" data-port="3007" target="_blank">⚠ Vulnerable<span class="port-num">:3007</span></a>
+          <a class="port-btn safe-btn" data-port="3008" target="_blank">✓ Segura<span class="port-num">:3008</span></a>
         </div>
       </div>
     </div>
@@ -165,8 +165,8 @@ footer{text-align:center;padding:2rem;color:#475569;font-size:.8rem}
       <div class="card-body">
         <p class="card-desc"><strong>SQL Injection</strong>: concatenación directa de input en la query. <code>' OR '1'='1' --</code> bypasea el login; UNION attack vuelca toda la base de datos. La versión segura usa consultas parametrizadas.</p>
         <div class="ports">
-          <a class="port-btn vuln-btn" href="http://localhost:3009" target="_blank">⚠ Vulnerable<span class="port-num">:3009</span></a>
-          <a class="port-btn safe-btn" href="http://localhost:3010" target="_blank">✓ Segura<span class="port-num">:3010</span></a>
+          <a class="port-btn vuln-btn" data-port="3009" target="_blank">⚠ Vulnerable<span class="port-num">:3009</span></a>
+          <a class="port-btn safe-btn" data-port="3010" target="_blank">✓ Segura<span class="port-num">:3010</span></a>
         </div>
       </div>
     </div>
@@ -180,5 +180,15 @@ footer{text-align:center;padding:2rem;color:#475569;font-size:.8rem}
 </main>
 
 <footer>Solo para uso educativo y entornos controlados &nbsp;·&nbsp; OWASP Top 10:2025 — <a href="https://owasp.org/Top10/2025/" style="color:#4f46e5" target="_blank">owasp.org/Top10/2025/</a></footer>
+
+<script>
+  // Construye los hrefs usando el hostname real del navegador.
+  // Funciona igual en localhost, 192.168.x.x o cualquier dominio público.
+  const host = window.location.hostname;
+  document.querySelectorAll('a[data-port]').forEach(a => {
+    const port = a.getAttribute('data-port');
+    a.href = `http://${host}:${port}`;
+  });
+</script>
 </body>
 </html>
