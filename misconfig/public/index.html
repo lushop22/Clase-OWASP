@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Security Misconfiguration Lab</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
+header{background:#1a1d27;border-bottom:1px solid #2d3149;padding:1rem 1.5rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+header h1{font-size:1.05rem;font-weight:700}
+.badge{font-size:.68rem;font-weight:700;padding:.2rem .6rem;border-radius:999px;text-transform:uppercase}
+.b-owasp{background:#1e40af;color:#93c5fd}.b-vuln{background:#7f1d1d;color:#fca5a5}.b-safe{background:#14532d;color:#86efac}
+main{max-width:960px;margin:1.5rem auto;padding:0 1.5rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.grid4{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem}
+@media(max-width:640px){.grid2,.grid4{grid-template-columns:1fr}}
+.card{background:#1e2235;border:1px solid #2d3149;border-radius:10px;padding:1.2rem;margin-bottom:1rem}
+.card h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:.9rem}
+.field{margin-bottom:.7rem}
+.field label{display:block;font-size:.78rem;color:#94a3b8;margin-bottom:.3rem}
+.field input{width:100%;padding:.45rem .75rem;background:#0f1117;border:1px solid #2d3149;border-radius:6px;color:#f8fafc;font-size:.85rem;font-family:monospace}
+.field input:focus{outline:none;border-color:#4f46e5}
+.btn{padding:.45rem 1rem;border:none;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600;width:100%;text-align:left;display:flex;align-items:center;gap:.4rem}
+.btn-primary{background:#4f46e5;color:#fff;justify-content:center}
+.btn-attack{background:#2d1b1b;border:1px solid #7f1d1d;color:#fca5a5}
+.btn-attack:hover{background:#3f1f1f}
+.btn-safe-action{background:#1e2235;border:1px solid #2d3149;color:#94a3b8;cursor:default}
+.atk-desc{font-size:.72rem;opacity:.8;margin-top:.2rem;display:block}
+.alert{padding:.6rem 1rem;border-radius:8px;font-size:.82rem;margin:.5rem 0}
+.a-danger{background:#2d1b1b;border:1px solid #7f1d1d;color:#fca5a5}
+.a-success{background:#1a2e1f;border:1px solid #14532d;color:#86efac}
+.a-info{background:#1e2a3f;border:1px solid #1e40af;color:#93c5fd}
+.resp{background:#0f1117;border:1px solid #2d3149;border-radius:8px;padding:.75rem 1rem;font-family:monospace;font-size:.77rem;line-height:1.5;white-space:pre-wrap;word-break:break-all;min-height:100px;max-height:350px;overflow-y:auto;color:#94a3b8;margin-top:.5rem}
+.ok{color:#4ade80}.err{color:#f87171}.key{color:#93c5fd}.val{color:#fde68a}
+.code{background:#0f1117;border:1px solid #2d3149;border-radius:8px;padding:.75rem 1rem;font-family:monospace;font-size:.77rem;line-height:1.6;white-space:pre-wrap;overflow-x:auto}
+.hl-bad{background:rgba(239,68,68,.15);border-left:3px solid #ef4444;display:block;padding-left:.5rem}
+.hl-good{background:rgba(74,222,128,.1);border-left:3px solid #4ade80;display:block;padding-left:.5rem}
+.c-kw{color:#c084fc}.c-fn{color:#60a5fa}.c-str{color:#fde68a}.c-cm{color:#475569;font-style:italic}
+</style>
+</head>
+<body>
+<header>
+  <h1>Security Misconfiguration</h1>
+  <span class="badge b-owasp">OWASP A02:2025 — Security Misconfiguration</span>
+  <span id="mode-badge" class="badge">cargando…</span>
+  <span id="mode-desc" style="font-size:.78rem;color:#94a3b8;margin-left:.5rem"></span>
+</header>
+
+<main>
+  <div id="global-alert"></div>
+
+  <div class="grid2">
+    <!-- Login -->
+    <div class="card">
+      <h3>Login (opcional para algunos ataques)</h3>
+      <div class="field"><label>Usuario</label><input id="usr" value="alice"/></div>
+      <div class="field"><label>Contraseña</label><input id="pwd" type="password" value="alice_pass"/></div>
+      <button class="btn btn-primary" style="width:auto" onclick="doLogin()">Iniciar sesión</button>
+      <div id="login-result" style="margin-top:.5rem"></div>
+      <p style="font-size:.75rem;color:#64748b;margin-top:.5rem">Credenciales disponibles: alice/alice_pass · bob/bob_pass · admin/admin123</p>
+    </div>
+
+    <!-- Attack buttons -->
+    <div class="card">
+      <h3>Vectores de ataque</h3>
+      <div class="grid4">
+        <div>
+          <button class="btn btn-attack" onclick="attack('debug')">
+            🕵 GET /debug
+            <span class="atk-desc">Expone config, env vars y sesiones</span>
+          </button>
+        </div>
+        <div>
+          <button class="btn btn-attack" onclick="attack('users')">
+            👥 GET /api/users
+            <span class="atk-desc">Lista usuarios sin autenticación</span>
+          </button>
+        </div>
+        <div>
+          <button class="btn btn-attack" onclick="attack('error')">
+            💥 Forzar error
+            <span class="atk-desc">Stack trace con config interna</span>
+          </button>
+        </div>
+        <div>
+          <button class="btn btn-attack" onclick="attack('admin')">
+            🔑 GET /api/admin
+            <span class="atk-desc">Panel admin sin autenticación</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Response -->
+  <div class="card">
+    <h3>Respuesta del servidor</h3>
+    <div id="attack-result"></div>
+    <div id="resp" class="resp">— sin petición —</div>
+  </div>
+
+  <!-- Code comparison -->
+  <div class="card">
+    <h3>Configuraciones comparadas</h3>
+    <div class="grid2">
+      <div>
+        <p style="font-size:.75rem;color:#f87171;font-weight:700;margin-bottom:.4rem">❌ Vulnerable</p>
+        <div class="code"><span class="c-cm">// /debug expone todo</span>
+<span class="hl-bad">app.<span class="c-fn">get</span>(<span class="c-str">'/debug'</span>, (req, res) => {
+  res.<span class="c-fn">json</span>({
+    environment: process.env,
+    server_config: SERVER_CONFIG,
+    all_users: USERS,  <span class="c-cm">// con contraseñas</span>
+    active_sessions: sessions,
+  });
+});</span>
+
+<span class="c-cm">// /api/users sin autenticación</span>
+<span class="hl-bad">app.<span class="c-fn">get</span>(<span class="c-str">'/api/users'</span>, (req, res) => {
+  res.<span class="c-fn">json</span>({ users: USERS }); <span class="c-cm">// sin auth</span>
+});</span>
+
+<span class="c-cm">// Error con stack trace completo</span>
+<span class="hl-bad">res.<span class="c-fn">json</span>({ error: e.message, stack: e.stack,
+            config: SERVER_CONFIG });</span></div>
+      </div>
+      <div>
+        <p style="font-size:.75rem;color:#4ade80;font-weight:700;margin-bottom:.4rem">✅ Segura</p>
+        <div class="code"><span class="c-cm">// /debug deshabilitado</span>
+<span class="hl-good">app.<span class="c-fn">get</span>(<span class="c-str">'/debug'</span>, (req, res) => {
+  res.<span class="c-fn">status</span>(404).<span class="c-fn">json</span>({ error: <span class="c-str">'Not Found'</span> });
+});</span>
+
+<span class="c-cm">// /api/users solo para admins</span>
+<span class="hl-good">app.<span class="c-fn">get</span>(<span class="c-str">'/api/users'</span>, (req, res) => {
+  <span class="c-kw">if</span> (!isAdmin(req)) <span class="c-kw">return</span> <span class="c-fn">abort</span>(403);
+  res.<span class="c-fn">json</span>({ users: users.<span class="c-fn">map</span>(
+    u => ({...u, password: <span class="c-str">'[REDACTED]'</span>})
+  )});
+});</span>
+
+<span class="c-cm">// Error genérico</span>
+<span class="hl-good">res.<span class="c-fn">status</span>(500).<span class="c-fn">json</span>({
+  error: <span class="c-str">'Error interno. Contacte al admin.'</span>
+});</span></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+let SECURE = false;
+let token = null;
+
+async function init() {
+  const cfg = await fetch('/api/config').then(r=>r.json());
+  SECURE = cfg.secure;
+  const mb = document.getElementById('mode-badge');
+  mb.textContent = SECURE ? '✓ SECURE' : '⚠ VULNERABLE';
+  mb.className = 'badge ' + (SECURE ? 'b-safe' : 'b-vuln');
+  document.getElementById('mode-desc').textContent = SECURE
+    ? 'Endpoints protegidos · errores genéricos · sin debug'
+    : 'Debug expuesto · errores verbosos · endpoints sin auth';
+
+  document.getElementById('global-alert').innerHTML = SECURE
+    ? `<div class="alert a-success" style="margin-bottom:1rem">✓ Modo seguro: los endpoints sensibles están protegidos o deshabilitados.</div>`
+    : `<div class="alert a-danger" style="margin-bottom:1rem">⚠ Modo vulnerable: prueba cada botón para ver qué información se filtra sin autenticación.</div>`;
+}
+
+async function doLogin() {
+  const data = await fetch('/api/login', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({username:document.getElementById('usr').value, password:document.getElementById('pwd').value})
+  }).then(r=>r.json());
+
+  if (data.token) {
+    token = data.token;
+    document.getElementById('login-result').innerHTML =
+      `<div class="alert a-success">✓ ${data.user.username} (${data.user.role})</div>`;
+  } else {
+    document.getElementById('login-result').innerHTML =
+      `<div class="alert a-danger">✗ ${data.error}</div>`;
+  }
+}
+
+async function attack(type) {
+  let url, label;
+  const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+
+  switch(type) {
+    case 'debug':  url = '/debug';              label = 'GET /debug'; break;
+    case 'users':  url = '/api/users';          label = 'GET /api/users'; break;
+    case 'error':  url = '/api/trigger-error';  label = 'GET /api/trigger-error'; break;
+    case 'admin':  url = '/api/admin/dashboard';label = 'GET /api/admin/dashboard'; break;
+  }
+
+  const res = await fetch(url, { headers });
+  const data = await res.json().catch(()=>({error:'No es JSON'}));
+
+  const ar = document.getElementById('attack-result');
+  const descriptions = {
+    debug: 'expone variables de entorno, config del servidor, sesiones activas y usuarios con contraseñas',
+    users: 'lista todos los usuarios (incluyendo contraseñas) sin requerir autenticación',
+    error: 'devuelve stack trace completo con rutas internas, credenciales de base de datos y configuración',
+    admin: 'panel de administración accesible sin autenticación'
+  };
+
+  if (!res.ok && (res.status === 403 || res.status === 404)) {
+    ar.innerHTML = `<div class="alert a-success">🛡 ${res.status}: Acceso denegado / Endpoint deshabilitado. Mitigación efectiva.</div>`;
+  } else if (res.ok) {
+    ar.innerHTML = `<div class="alert a-danger">🔓 BRECHA: ${label} — ${descriptions[type]}</div>`;
+  } else {
+    ar.innerHTML = `<div class="alert a-info">HTTP ${res.status}: ${data.error || ''}</div>`;
+  }
+
+  const statusClass = res.ok ? 'ok' : (res.status===403||res.status===404 ? 'err' : 'val');
+  document.getElementById('resp').innerHTML =
+    `<span class="${statusClass}">HTTP ${res.status}</span>  <span class="key">${label}</span>` +
+    `\n<span class="key">Auth:</span> <span class="val">${token ? 'Bearer '+token.slice(0,16)+'…' : '(ninguna)'}</span>\n\n` +
+    esc(JSON.stringify(data,null,2));
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+init();
+</script>
+</body>
+</html>

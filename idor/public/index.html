@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>IDOR Lab</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
+header{background:#1a1d27;border-bottom:1px solid #2d3149;padding:1rem 1.5rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+header h1{font-size:1.05rem;font-weight:700}
+.badge{font-size:.68rem;font-weight:700;padding:.2rem .6rem;border-radius:999px;text-transform:uppercase}
+.b-owasp{background:#1e40af;color:#93c5fd}.b-vuln{background:#7f1d1d;color:#fca5a5}.b-safe{background:#14532d;color:#86efac}
+main{max-width:900px;margin:1.5rem auto;padding:0 1.5rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+.card{background:#1e2235;border:1px solid #2d3149;border-radius:10px;padding:1.2rem;margin-bottom:1rem}
+.card h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:.9rem}
+.user-card{display:flex;align-items:center;gap:.75rem;padding:.6rem .9rem;background:#161925;border:1px solid #2d3149;border-radius:8px;cursor:pointer;margin-bottom:.5rem;transition:all .15s}
+.user-card:hover{border-color:#4f46e5;background:#1e2235}
+.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+.av1{background:#1d4ed8}.av2{background:#7c3aed}.av3{background:#b91c1c}
+.uname{font-size:.85rem;font-weight:600}
+.urole{font-size:.72rem;color:#94a3b8}
+.urole.admin{color:#fbbf24}
+.btn{padding:.45rem 1rem;border:none;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600}
+.btn-primary{background:#4f46e5;color:#fff}.btn-danger{background:#7f1d1d;color:#fca5a5}.btn-sm{padding:.3rem .6rem;font-size:.75rem}
+.url-bar{display:flex;align-items:center;gap:.5rem;background:#0f1117;border:1px solid #2d3149;border-radius:6px;padding:.4rem .75rem;font-family:monospace;font-size:.8rem;margin-bottom:.75rem}
+.url-bar span{color:#94a3b8}
+.id-input{width:50px;padding:.2rem .4rem;background:#161925;border:1px solid #2d3149;border-radius:4px;color:#f87171;font-family:monospace;font-size:.85rem;text-align:center}
+.profile-row{display:flex;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid #2d3149;font-size:.83rem}
+.profile-row:last-child{border-bottom:none}
+.profile-row .lbl{color:#94a3b8}
+.profile-row .val{color:#f8fafc;font-weight:500}
+.sensitive{color:#f87171!important;font-family:monospace}
+.alert{padding:.6rem 1rem;border-radius:8px;font-size:.82rem;margin:.5rem 0}
+.a-danger{background:#2d1b1b;border:1px solid #7f1d1d;color:#fca5a5}
+.a-success{background:#1a2e1f;border:1px solid #14532d;color:#86efac}
+.a-info{background:#1e2a3f;border:1px solid #1e40af;color:#93c5fd}
+.resp{background:#0f1117;border:1px solid #2d3149;border-radius:8px;padding:.75rem 1rem;font-family:monospace;font-size:.78rem;line-height:1.5;white-space:pre-wrap;word-break:break-all;min-height:60px;color:#94a3b8;margin-top:.75rem}
+.ok{color:#4ade80}.err{color:#f87171}.key{color:#93c5fd}.val2{color:#fde68a}
+.code{background:#0f1117;border:1px solid #2d3149;border-radius:8px;padding:.75rem 1rem;font-family:monospace;font-size:.77rem;line-height:1.6;white-space:pre-wrap;overflow-x:auto}
+.hl-bad{background:rgba(239,68,68,.15);border-left:3px solid #ef4444;display:block;padding-left:.5rem}
+.hl-good{background:rgba(74,222,128,.1);border-left:3px solid #4ade80;display:block;padding-left:.5rem}
+.c-kw{color:#c084fc}.c-fn{color:#60a5fa}.c-str{color:#fde68a}.c-cm{color:#475569;font-style:italic}
+</style>
+</head>
+<body>
+<header>
+  <h1>Broken Access Control — IDOR</h1>
+  <span class="badge b-owasp">OWASP A01:2025 — Broken Access Control</span>
+  <span id="mode-badge" class="badge">cargando…</span>
+  <span id="mode-desc" style="font-size:.78rem;color:#94a3b8;margin-left:.5rem"></span>
+</header>
+
+<main>
+  <div id="login-section">
+    <div class="card" style="max-width:360px;margin:0 auto">
+      <h3>Inicia sesión como…</h3>
+      <div id="global-alert"></div>
+      <div class="user-card" onclick="login(1)">
+        <div class="avatar av1">A</div>
+        <div><div class="uname">Ana García</div><div class="urole">Usuario · ID: 1</div></div>
+      </div>
+      <div class="user-card" onclick="login(2)">
+        <div class="avatar av2">C</div>
+        <div><div class="uname">Carlos López</div><div class="urole">Usuario · ID: 2</div></div>
+      </div>
+      <div class="user-card" onclick="login(3)">
+        <div class="avatar av3">R</div>
+        <div><div class="uname">Root Admin</div><div class="urole admin">Administrador · ID: 3</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="dash-section" style="display:none">
+    <div class="grid2">
+      <!-- Attack panel -->
+      <div class="card">
+        <h3>Panel de ataque IDOR</h3>
+        <div id="session-info" class="alert a-info"></div>
+        <div class="url-bar">
+          <span>GET /api/profile?id=</span>
+          <input class="id-input" id="req-id" type="number" min="1" max="3" value="1"/>
+          <button class="btn btn-danger btn-sm" onclick="fetchProfile()" style="margin-left:.5rem">Solicitar</button>
+        </div>
+        <p style="font-size:.75rem;color:#64748b;margin-bottom:.75rem">Cambia el ID para intentar acceder al perfil de otro usuario</p>
+        <div id="attack-result"></div>
+        <div id="http-resp" class="resp">— sin petición —</div>
+        <button class="btn btn-sm" onclick="logout()" style="margin-top:1rem;background:#1e2235;border:1px solid #2d3149;color:#94a3b8">Cerrar sesión</button>
+      </div>
+
+      <!-- Profile display -->
+      <div class="card">
+        <h3>Datos devueltos por el servidor</h3>
+        <div id="profile-card" style="display:none">
+          <div class="profile-row"><span class="lbl">ID</span><span class="val" id="p-id"></span></div>
+          <div class="profile-row"><span class="lbl">Nombre</span><span class="val" id="p-name"></span></div>
+          <div class="profile-row"><span class="lbl">Email</span><span class="val sensitive" id="p-email"></span></div>
+          <div class="profile-row"><span class="lbl">Rol</span><span class="val" id="p-role"></span></div>
+          <div class="profile-row"><span class="lbl">Saldo</span><span class="val sensitive" id="p-balance"></span></div>
+          <div class="profile-row"><span class="lbl">Tarjeta</span><span class="val sensitive" id="p-card"></span></div>
+          <div class="profile-row"><span class="lbl">Teléfono</span><span class="val sensitive" id="p-phone"></span></div>
+        </div>
+        <p id="no-profile" style="color:#64748b;font-size:.83rem">Haz una petición para ver los datos</p>
+      </div>
+    </div>
+
+    <!-- Code -->
+    <div class="card">
+      <h3>Comparación de código</h3>
+      <div class="grid2">
+        <div>
+          <p style="font-size:.75rem;color:#f87171;font-weight:700;margin-bottom:.4rem">❌ Vulnerable</p>
+          <div class="code"><span class="c-cm">// GET /api/profile?id=X</span>
+<span class="hl-bad"><span class="c-cm">// Usa el ?id= del cliente — cualquiera</span>
+<span class="c-cm">// puede pedir el ID que quiera</span>
+<span class="c-kw">const</span> requestedId = req.query.id;
+<span class="c-kw">const</span> user = USERS[requestedId];
+res.<span class="c-fn">json</span>({ user });</span></div>
+        </div>
+        <div>
+          <p style="font-size:.75rem;color:#4ade80;font-weight:700;margin-bottom:.4rem">✅ Segura</p>
+          <div class="code"><span class="c-cm">// Identidad viene de la sesión del servidor</span>
+<span class="hl-good"><span class="c-kw">const</span> sessionUserId = sessions.<span class="c-fn">get</span>(token);
+<span class="c-kw">const</span> requestedId = parseInt(req.query.id);
+
+<span class="c-kw">if</span> (requestedId !== sessionUserId
+    &amp;&amp; sessionUser.role !== <span class="c-str">'admin'</span>) {
+  <span class="c-kw">return</span> res.<span class="c-fn">status</span>(<span style="color:#f97316">403</span>).<span class="c-fn">json</span>({
+    error: <span class="c-str">'Acceso denegado'</span>
+  });
+}</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+let SECURE = false;
+let token = null;
+let myUserId = null;
+
+async function init() {
+  const cfg = await fetch('/api/config').then(r=>r.json());
+  SECURE = cfg.secure;
+  const mb = document.getElementById('mode-badge');
+  mb.textContent = SECURE ? '✓ SECURE' : '⚠ VULNERABLE';
+  mb.className = 'badge ' + (SECURE ? 'b-safe' : 'b-vuln');
+  document.getElementById('mode-desc').textContent = SECURE
+    ? 'El servidor verifica que el recurso pertenezca al usuario autenticado'
+    : 'El servidor usa el ?id= del cliente sin verificar propiedad';
+
+  if (!SECURE) {
+    document.getElementById('global-alert').innerHTML =
+      `<div class="alert a-danger">⚠ El servidor no verifica si el recurso solicitado te pertenece.</div>`;
+  } else {
+    document.getElementById('global-alert').innerHTML =
+      `<div class="alert a-success">✓ El servidor valida la propiedad del recurso antes de responder.</div>`;
+  }
+}
+
+async function login(userId) {
+  const data = await fetch('/api/login', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ userId })
+  }).then(r=>r.json());
+  token = data.token;
+  myUserId = data.user.id;
+  document.getElementById('login-section').style.display = 'none';
+  document.getElementById('dash-section').style.display = 'block';
+  document.getElementById('req-id').value = myUserId;
+  document.getElementById('session-info').textContent =
+    `Sesión activa: ${data.user.name} (ID: ${data.user.id}, rol: ${data.user.role})`;
+  fetchProfile();
+}
+
+async function logout() {
+  if (token) await fetch('/api/logout',{method:'POST',headers:{'Authorization':'Bearer '+token}});
+  token = null; myUserId = null;
+  document.getElementById('login-section').style.display = 'block';
+  document.getElementById('dash-section').style.display = 'none';
+  document.getElementById('profile-card').style.display = 'none';
+  document.getElementById('no-profile').style.display = 'block';
+  document.getElementById('http-resp').textContent = '— sin petición —';
+  document.getElementById('attack-result').innerHTML = '';
+}
+
+async function fetchProfile() {
+  const reqId = parseInt(document.getElementById('req-id').value);
+  const res = await fetch(`/api/profile?id=${reqId}`, {
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  const data = await res.json();
+  const ar = document.getElementById('attack-result');
+
+  if (res.ok) {
+    const isOwn = data.user.id === myUserId;
+    if (!isOwn) {
+      ar.innerHTML = `<div class="alert a-danger">🔓 BRECHA: sesión=${myUserId} pero el servidor devolvió datos del usuario ${data.user.id} (${data.user.name})</div>`;
+    } else {
+      ar.innerHTML = `<div class="alert a-success">✓ Mostrando tu propio perfil (ID ${data.user.id})</div>`;
+    }
+    const u = data.user;
+    ['id','name','email','role','balance','card','phone'].forEach(k => {
+      const el = document.getElementById('p-'+k);
+      if (el) el.textContent = u[k] ?? '';
+    });
+    document.getElementById('profile-card').style.display = 'block';
+    document.getElementById('no-profile').style.display = 'none';
+  } else {
+    ar.innerHTML = `<div class="alert ${res.status===403?'a-success':'a-danger'}">${res.status===403?'🛡 Acceso denegado (403):':'Error:'} ${data.error}</div>`;
+    document.getElementById('profile-card').style.display = 'none';
+    document.getElementById('no-profile').style.display = 'block';
+    document.getElementById('no-profile').textContent = data.error || 'Sin datos';
+  }
+
+  const statusClass = res.ok ? 'ok' : 'err';
+  document.getElementById('http-resp').innerHTML =
+    `<span class="${statusClass}">HTTP ${res.status} ${res.ok?'OK':'Forbidden'}</span>\n` +
+    `<span class="key">GET</span> /api/profile?id=${reqId}\n` +
+    `<span class="key">Authorization:</span> <span class="val2">Bearer ${token.slice(0,12)}…</span>\n\n` +
+    `<span class="val2">${esc(JSON.stringify(data,null,2))}</span>`;
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+init();
+</script>
+</body>
+</html>

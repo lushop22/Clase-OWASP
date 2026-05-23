@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Cryptographic Failures Lab</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
+header{background:#1a1d27;border-bottom:1px solid #2d3149;padding:1rem 1.5rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+header h1{font-size:1.05rem;font-weight:700}
+.badge{font-size:.68rem;font-weight:700;padding:.2rem .6rem;border-radius:999px;text-transform:uppercase}
+.b-owasp{background:#1e40af;color:#93c5fd}.b-vuln{background:#7f1d1d;color:#fca5a5}.b-safe{background:#14532d;color:#86efac}
+main{max-width:960px;margin:1.5rem auto;padding:0 1.5rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+.card{background:#1e2235;border:1px solid #2d3149;border-radius:10px;padding:1.2rem;margin-bottom:1rem}
+.card h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:.9rem}
+.field{margin-bottom:.7rem}
+.field label{display:block;font-size:.78rem;color:#94a3b8;margin-bottom:.3rem}
+.field input{width:100%;padding:.45rem .75rem;background:#0f1117;border:1px solid #2d3149;border-radius:6px;color:#f8fafc;font-size:.85rem;font-family:monospace}
+.field input:focus{outline:none;border-color:#4f46e5}
+.btn{padding:.45rem 1rem;border:none;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600}
+.btn-primary{background:#4f46e5;color:#fff}.btn-attack{background:#7f1d1d;color:#fca5a5}
+.btn-sm{padding:.3rem .65rem;font-size:.75rem}.btn-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem}
+.table-wrap{overflow-x:auto;margin-top:.5rem}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+th{background:#161925;color:#94a3b8;padding:.5rem .75rem;text-align:left;border-bottom:1px solid #2d3149;text-transform:uppercase;font-size:.7rem;letter-spacing:.04em}
+td{padding:.5rem .75rem;border-bottom:1px solid #1e2235;font-family:monospace;word-break:break-all}
+tr:hover td{background:#1e2235}
+.hash-md5{color:#f87171}.hash-bcrypt{color:#4ade80}
+.alert{padding:.6rem 1rem;border-radius:8px;font-size:.82rem;margin:.4rem 0}
+.a-danger{background:#2d1b1b;border:1px solid #7f1d1d;color:#fca5a5}
+.a-success{background:#1a2e1f;border:1px solid #14532d;color:#86efac}
+.a-info{background:#1e2a3f;border:1px solid #1e40af;color:#93c5fd}
+.resp{background:#0f1117;border:1px solid #2d3149;border-radius:8px;padding:.75rem 1rem;font-family:monospace;font-size:.77rem;line-height:1.5;white-space:pre-wrap;word-break:break-all;min-height:60px;max-height:250px;overflow-y:auto;color:#94a3b8;margin-top:.5rem}
+.ok{color:#4ade80}.err{color:#f87171}.key{color:#93c5fd}.val{color:#fde68a}
+.code{background:#0f1117;border:1px solid #2d3149;border-radius:8px;padding:.75rem 1rem;font-family:monospace;font-size:.77rem;line-height:1.6;white-space:pre-wrap;overflow-x:auto}
+.hl-bad{background:rgba(239,68,68,.15);border-left:3px solid #ef4444;display:block;padding-left:.5rem}
+.hl-good{background:rgba(74,222,128,.1);border-left:3px solid #4ade80;display:block;padding-left:.5rem}
+.c-kw{color:#c084fc}.c-fn{color:#60a5fa}.c-str{color:#fde68a}.c-cm{color:#475569;font-style:italic}
+.crack-result{padding:.75rem 1rem;border-radius:8px;font-size:.9rem;font-weight:700;text-align:center;margin-top:.5rem}
+.cr-success{background:#2d1b1b;border:2px solid #f87171;color:#f87171}
+.cr-fail{background:#1a2e1f;border:2px solid #4ade80;color:#4ade80}
+</style>
+</head>
+<body>
+<header>
+  <h1>Cryptographic Failures</h1>
+  <span class="badge b-owasp">OWASP A04:2025</span>
+  <span id="mode-badge" class="badge">cargando…</span>
+  <span id="mode-desc" style="font-size:.78rem;color:#94a3b8;margin-left:.5rem"></span>
+</header>
+
+<main>
+  <div id="global-alert"></div>
+
+  <div class="grid2">
+    <!-- DB Breach simulation -->
+    <div class="card">
+      <h3>1. Simular brecha de base de datos</h3>
+      <p style="font-size:.82rem;color:#94a3b8;margin-bottom:.75rem">En una brecha real, el atacante obtiene la tabla de usuarios con sus hashes de contraseña.</p>
+      <button class="btn btn-attack" onclick="dumpHashes()">💾 Descargar hashes (simular brecha DB)</button>
+
+      <div id="hash-table-wrap" style="display:none;margin-top:.75rem">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Usuario</th><th>Hash almacenado</th><th>Tipo</th></tr></thead>
+            <tbody id="hash-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Crack panel -->
+    <div class="card">
+      <h3>2. Intentar crackear con rainbow table</h3>
+      <p style="font-size:.82rem;color:#94a3b8;margin-bottom:.75rem">Pega un hash de la tabla de arriba e intenta revertirlo.</p>
+      <div class="field">
+        <label>Hash a crackear</label>
+        <input id="crack-input" placeholder="pega el hash aquí"/>
+      </div>
+      <button class="btn btn-attack" onclick="crackHash()">⚡ Crackear hash</button>
+      <div id="crack-result"></div>
+
+      <div style="margin-top:1rem">
+        <h3 style="margin-bottom:.5rem">3. Registrar nuevo usuario</h3>
+        <div class="field"><label>Usuario</label><input id="reg-user" placeholder="nuevo_usuario"/></div>
+        <div class="field"><label>Contraseña</label><input id="reg-pass" placeholder="mi_contraseña"/></div>
+        <button class="btn btn-primary btn-sm" onclick="register()">Registrar</button>
+        <div id="reg-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login test -->
+  <div class="card">
+    <h3>4. Probar login con contraseña crackeada</h3>
+    <div class="grid2">
+      <div>
+        <div class="field"><label>Usuario</label><input id="login-user" placeholder="alice"/></div>
+        <div class="field"><label>Contraseña</label><input id="login-pass" placeholder="password123"/></div>
+        <div class="btn-row">
+          <button class="btn btn-primary btn-sm" onclick="doLogin()">Iniciar sesión</button>
+          <button class="btn btn-sm" style="background:#1e2235;border:1px solid #2d3149;color:#94a3b8" onclick="setLoginCreds('alice','password123')">alice / password123</button>
+          <button class="btn btn-sm" style="background:#1e2235;border:1px solid #2d3149;color:#94a3b8" onclick="setLoginCreds('bob','qwerty')">bob / qwerty</button>
+          <button class="btn btn-sm" style="background:#1e2235;border:1px solid #2d3149;color:#94a3b8" onclick="setLoginCreds('admin','admin')">admin / admin</button>
+        </div>
+        <div id="login-result" style="margin-top:.5rem"></div>
+      </div>
+      <div id="resp-wrap">
+        <div id="resp" class="resp">— sin petición —</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Code comparison -->
+  <div class="card">
+    <h3>Comparación de código — almacenamiento de contraseñas</h3>
+    <div class="grid2">
+      <div>
+        <p style="font-size:.75rem;color:#f87171;font-weight:700;margin-bottom:.4rem">❌ Vulnerable — MD5 sin sal</p>
+        <div class="code"><span class="c-cm">// MD5: rápido, sin sal, deprecated</span>
+<span class="hl-bad"><span class="c-kw">const</span> md5 = s => crypto
+  .<span class="c-fn">createHash</span>(<span class="c-str">'md5'</span>)
+  .<span class="c-fn">update</span>(s)
+  .<span class="c-fn">digest</span>(<span class="c-str">'hex'</span>);
+
+<span class="c-cm">// Almacena: 482c811da5d5b4bc6d497ffa98491e38</span>
+<span class="c-cm">// Crackeable en &lt;1ms con rainbow table</span>
+<span class="c-cm">// hashcat puede hacer 10B+ hash/seg con GPU</span>
+user.hash = <span class="c-fn">md5</span>(password);</span>
+
+<span class="c-cm">// Verificación:</span>
+<span class="hl-bad"><span class="c-fn">md5</span>(input) === user.hash <span class="c-cm">// reversible</span></span></div>
+      </div>
+      <div>
+        <p style="font-size:.75rem;color:#4ade80;font-weight:700;margin-bottom:.4rem">✅ Segura — bcrypt con sal (cost=12)</p>
+        <div class="code"><span class="c-cm">// bcrypt: adaptativo, salted, lento por diseño</span>
+<span class="hl-good"><span class="c-kw">const</span> bcrypt = <span class="c-fn">require</span>(<span class="c-str">'bcryptjs'</span>);
+
+<span class="c-cm">// Almacena: $2b$12$N9qo8uLOi...
+// Incluye sal única + cost factor
+// ~250ms por hash (ajustable)</span>
+user.hash = <span class="c-kw">await</span> bcrypt.<span class="c-fn">hash</span>(password, <span style="color:#f97316">12</span>);</span>
+
+<span class="c-cm">// Verificación:</span>
+<span class="hl-good"><span class="c-kw">await</span> bcrypt.<span class="c-fn">compare</span>(input, user.hash)
+<span class="c-cm">// sal y cost extraídos del hash automáticamente</span>
+<span class="c-cm">// no reversible con rainbow tables</span></span></div>
+      </div>
+    </div>
+    <div class="alert a-info" style="margin-top:.75rem">
+      <b>Por qué bcrypt:</b> el cost factor (12) hace que cada verificación tome ~250ms. Con 10 mil millones de hashes/seg (GPU), crackear una contraseña bcrypt de 8 caracteres tomaría miles de años. MD5 se crackea en segundos.
+    </div>
+  </div>
+</main>
+
+<script>
+let SECURE = false;
+
+async function init() {
+  const cfg = await fetch('/api/config').then(r=>r.json());
+  SECURE = cfg.secure;
+  const mb = document.getElementById('mode-badge');
+  mb.textContent = SECURE ? '✓ SECURE' : '⚠ VULNERABLE';
+  mb.className = 'badge ' + (SECURE ? 'b-safe' : 'b-vuln');
+  document.getElementById('mode-desc').textContent = SECURE
+    ? 'Almacenamiento con bcrypt (cost=12) + sal única'
+    : 'Almacenamiento con MD5 sin sal — reversible con rainbow tables';
+
+  document.getElementById('global-alert').innerHTML = SECURE
+    ? `<div class="alert a-success" style="margin-bottom:1rem">✓ Contraseñas almacenadas con <b>bcrypt (cost=12)</b>. Los hashes tienen sal única y no son reversibles.</div>`
+    : `<div class="alert a-danger" style="margin-bottom:1rem">⚠ Contraseñas almacenadas como <b>MD5 sin sal</b>. Crackeable en milisegundos con rainbow tables.</div>`;
+}
+
+async function dumpHashes() {
+  const data = await fetch('/api/dump-hashes').then(r=>r.json());
+  document.getElementById('hash-table-wrap').style.display = 'block';
+  const tbody = document.getElementById('hash-table');
+  tbody.innerHTML = '';
+  data.users.forEach(u => {
+    const isMD5 = !u.hash.startsWith('$2b$');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${u.username}</td>
+      <td class="${isMD5?'hash-md5':'hash-bcrypt'}" style="cursor:pointer" onclick="document.getElementById('crack-input').value='${u.hash}'" title="Click para pegar en crack">${u.hash}</td>
+      <td>${u.hashType}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+async function crackHash() {
+  const hash = document.getElementById('crack-input').value.trim();
+  if (!hash) return;
+  const data = await fetch('/api/crack',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hash})}).then(r=>r.json());
+  const el = document.getElementById('crack-result');
+  if (data.cracked) {
+    el.innerHTML = `<div class="crack-result cr-success">⚡ CRACKEADO: contraseña = "${data.password}"<br/><small>${data.message}</small></div>`;
+  } else {
+    el.innerHTML = `<div class="crack-result cr-fail">🛡 NO CRACKEADO<br/><small>${data.message}</small></div>`;
+  }
+}
+
+async function register() {
+  const username = document.getElementById('reg-user').value.trim();
+  const password = document.getElementById('reg-pass').value.trim();
+  if (!username || !password) return;
+  const res = await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+  const data = await res.json();
+  const el = document.getElementById('reg-result');
+  if (res.ok) {
+    el.innerHTML = `<div class="alert ${SECURE?'a-success':'a-danger'}" style="margin-top:.5rem">
+      Hash almacenado: <code style="font-size:.72rem;word-break:break-all">${data.stored_hash}</code><br/>
+      Tipo: <b>${data.hashType}</b>
+    </div>`;
+    dumpHashes();
+  } else {
+    el.innerHTML = `<div class="alert a-danger" style="margin-top:.5rem">${data.error}</div>`;
+  }
+}
+
+function setLoginCreds(u, p) {
+  document.getElementById('login-user').value = u;
+  document.getElementById('login-pass').value = p;
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value.trim();
+  const res = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+  const data = await res.json();
+  document.getElementById('login-result').innerHTML = res.ok
+    ? `<div class="alert a-success">✓ Login exitoso: ${data.user.username} (${data.user.role})</div>`
+    : `<div class="alert a-danger">✗ ${data.error}</div>`;
+  document.getElementById('resp').innerHTML =
+    `<span class="${res.ok?'ok':'err'}">HTTP ${res.status}</span>  POST /api/login\n\n`+esc(JSON.stringify(data,null,2));
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+init();
+</script>
+</body>
+</html>

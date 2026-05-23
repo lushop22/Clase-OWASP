@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # ── Portal de inicio ────────────────────────────────────────
+  portal:
+    build: ./portal
+    ports: ["8080:80"]
+    restart: unless-stopped
+
+  # ── A01:2025 — Broken Access Control (IDOR) ─────────────────
+  idor-vuln:
+    build: ./idor
+    ports: ["3001:3000"]
+    environment: [SECURE=false]
+    restart: unless-stopped
+
+  idor-fixed:
+    build: ./idor
+    ports: ["3002:3000"]
+    environment: [SECURE=true]
+    restart: unless-stopped
+
+  # ── A02:2025 — Security Misconfiguration ────────────────────
+  misconfig-vuln:
+    build: ./misconfig
+    ports: ["3003:3000"]
+    environment: [SECURE=false]
+    restart: unless-stopped
+
+  misconfig-fixed:
+    build: ./misconfig
+    ports: ["3004:3000"]
+    environment: [SECURE=true]
+    restart: unless-stopped
+
+  # ── A03:2025 — Software Supply Chain Failures ───────────────
+  supply-chain-vuln:
+    build: ./supply-chain
+    ports: ["3005:3000"]
+    environment: [SECURE=false]
+    restart: unless-stopped
+
+  supply-chain-fixed:
+    build: ./supply-chain
+    ports: ["3006:3000"]
+    environment: [SECURE=true]
+    restart: unless-stopped
+
+  # ── A04:2025 — Cryptographic Failures ───────────────────────
+  crypto-vuln:
+    build: ./crypto
+    ports: ["3007:3000"]
+    environment: [SECURE=false]
+    restart: unless-stopped
+
+  crypto-fixed:
+    build: ./crypto
+    ports: ["3008:3000"]
+    environment: [SECURE=true]
+    restart: unless-stopped
+
+  # ── A05:2025 — Injection (SQL Injection) ────────────────────
+  sqli-vuln:
+    build: ./sqli
+    ports: ["3009:3000"]
+    environment: [SECURE=false]
+    restart: unless-stopped
+
+  sqli-fixed:
+    build: ./sqli
+    ports: ["3010:3000"]
+    environment: [SECURE=true]
+    restart: unless-stopped

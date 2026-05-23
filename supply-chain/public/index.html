@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Supply Chain Failures Lab</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
+header{background:#1a1d27;border-bottom:1px solid #2d3149;padding:1rem 1.5rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+header h1{font-size:1.05rem;font-weight:700}
+.badge{font-size:.68rem;font-weight:700;padding:.2rem .6rem;border-radius:999px;text-transform:uppercase}
+.b-owasp{background:#1e40af;color:#93c5fd}.b-vuln{background:#7f1d1d;color:#fca5a5}.b-safe{background:#14532d;color:#86efac}
+main{max-width:960px;margin:1.5rem auto;padding:0 1.5rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+.card{background:#1e2235;border:1px solid #2d3149;border-radius:10px;padding:1.2rem;margin-bottom:1rem}
+.card h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:.9rem}
+.user-card{display:flex;align-items:center;gap:.75rem;padding:.6rem .9rem;background:#161925;border:1px solid #2d3149;border-radius:8px;cursor:pointer;margin-bottom:.5rem;transition:all .15s}
+.user-card:hover{border-color:#4f46e5;background:#1e2235}
+.avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0}
+.av1{background:#1d4ed8}.av2{background:#7c3aed}.av3{background:#b91c1c}
+.uname{font-size:.85rem;font-weight:600}.urole{font-size:.72rem;color:#94a3b8}
+.urole.admin{color:#fbbf24}
+.field{margin-bottom:.7rem}
+.field label{display:block;font-size:.78rem;color:#94a3b8;margin-bottom:.3rem}
+.field textarea{width:100%;padding:.45rem .75rem;background:#0f1117;border:1px solid #2d3149;border-radius:6px;color:#f8fafc;font-size:.82rem;font-family:monospace;resize:vertical}
+.field textarea:focus{outline:none;border-color:#4f46e5}
+.btn{padding:.45rem 1rem;border:none;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600}
+.btn-primary{background:#4f46e5;color:#fff}.btn-attack{background:#7f1d1d;color:#fca5a5}
+.btn-warn{background:#78350f;color:#fcd34d}.btn-sm{padding:.3rem .65rem;font-size:.75rem}
+.btn-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem}
+.attacks{display:flex;flex-direction:column;gap:.4rem}
+.atk{padding:.45rem .75rem;background:#2d1b1b;border:1px solid #7f1d1d;border-radius:6px;cursor:pointer;font-family:monospace;font-size:.73rem;color:#fca5a5;text-align:left;line-height:1.4}
+.atk:hover{background:#3f1f1f}
+.atk-label{font-size:.68rem;color:#f87171;display:block;margin-bottom:.15rem;font-family:system-ui;font-style:italic}
+.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.status-box{padding:.65rem .9rem;border-radius:8px;text-align:center}
+.sb-clean{background:#1a2e1f;border:1px solid #14532d;color:#4ade80}
+.sb-polluted{background:#2d1b1b;border:1px solid #7f1d1d;color:#f87171}
+.sb-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;opacity:.8;display:block;margin-bottom:.2rem}
+.sb-val{font-size:1.1rem;font-weight:700;font-family:monospace}
+.alert{padding:.6rem 1rem;border-radius:8px;font-size:.82rem;margin:.4rem 0}
+.a-danger{background:#2d1b1b;border:1px solid #7f1d1d;color:#fca5a5}
+.a-success{background:#1a2e1f;border:1px solid #14532d;color:#86efac}
+.a-info{background:#1e2a3f;border:1px solid #1e40af;color:#93c5fd}
+.a-warn{background:#2d1f0a;border:1px solid #92400e;color:#fcd34d}
+.resp{background:#0f1117;border:1px solid #2d3149;border-radius:8px;padding:.75rem 1rem;font-family:monospace;font-size:.77rem;line-height:1.5;white-space:pre-wrap;word-break:break-all;min-height:60px;max-height:280px;overflow-y:auto;color:#94a3b8;margin-top:.5rem}
+.ok{color:#4ade80}.err{color:#f87171}.key{color:#93c5fd}.val{color:#fde68a}.warn{color:#fcd34d}
+.code{background:#0f1117;border:1px solid #2d3149;border-radius:8px;padding:.75rem 1rem;font-family:monospace;font-size:.77rem;line-height:1.6;white-space:pre-wrap;overflow-x:auto}
+.hl-bad{background:rgba(239,68,68,.15);border-left:3px solid #ef4444;display:block;padding-left:.5rem}
+.hl-good{background:rgba(74,222,128,.1);border-left:3px solid #4ade80;display:block;padding-left:.5rem}
+.c-kw{color:#c084fc}.c-fn{color:#60a5fa}.c-str{color:#fde68a}.c-cm{color:#475569;font-style:italic}
+.timeline{background:#0f1117;border:1px solid #2d3149;border-radius:8px;padding:.75rem 1rem;font-size:.78rem;line-height:1.8;color:#94a3b8}
+.t-step{display:flex;align-items:flex-start;gap:.5rem;margin-bottom:.3rem}
+.t-num{width:20px;height:20px;border-radius:50%;background:#1e2235;border:1px solid #4f46e5;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;color:#93c5fd;flex-shrink:0;margin-top:.1rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>Software Supply Chain Failures</h1>
+  <span class="badge b-owasp">OWASP A03:2025</span>
+  <span id="mode-badge" class="badge">cargando…</span>
+  <span id="mode-desc" style="font-size:.78rem;color:#94a3b8;margin-left:.5rem"></span>
+</header>
+
+<main>
+  <div id="global-alert"></div>
+
+  <!-- Login -->
+  <div id="login-section">
+    <div class="card" style="max-width:360px;margin:0 auto">
+      <h3>Inicia sesión como usuario regular</h3>
+      <div class="user-card" onclick="login('alice')">
+        <div class="avatar av1">A</div>
+        <div><div class="uname">Alice</div><div class="urole">Usuario regular</div></div>
+      </div>
+      <div class="user-card" onclick="login('bob')">
+        <div class="avatar av2">B</div>
+        <div><div class="uname">Bob</div><div class="urole">Usuario regular</div></div>
+      </div>
+      <div class="user-card" onclick="login('admin')">
+        <div class="avatar av3">A</div>
+        <div><div class="uname">Admin</div><div class="urole admin">Administrador</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dash-section" style="display:none">
+    <div class="grid2">
+      <!-- Attack Panel -->
+      <div class="card">
+        <h3>Panel de ataque — Prototype Pollution</h3>
+        <div id="session-info" class="alert a-info" style="margin-bottom:.75rem"></div>
+
+        <div class="status-grid" style="margin-bottom:.75rem">
+          <div id="sb-proto" class="status-box sb-clean">
+            <span class="sb-label">Object.prototype.isAdmin</span>
+            <span class="sb-val" id="proto-val">undefined</span>
+          </div>
+          <div id="sb-admin" class="status-box sb-clean">
+            <span class="sb-label">Acceso admin</span>
+            <span class="sb-val" id="admin-val">NO</span>
+          </div>
+        </div>
+
+        <h3 style="margin-bottom:.5rem">1. Inyecta el payload malicioso en preferencias</h3>
+        <div class="field">
+          <label>JSON de preferencias (POST /api/prefs)</label>
+          <textarea id="prefs-input" rows="5">{"theme": "dark"}</textarea>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-attack btn-sm" onclick="sendPrefs()">Enviar preferencias</button>
+          <button class="btn btn-sm" style="background:#1e2235;border:1px solid #2d3149;color:#94a3b8" onclick="checkAdmin()">2. Verificar acceso admin</button>
+          <button class="btn btn-sm" style="background:#1e2235;border:1px solid #2d3149;color:#94a3b8" onclick="getAdminPanel()">3. Acceder panel admin</button>
+        </div>
+
+        <h3 style="margin-bottom:.5rem;margin-top:.75rem">Payloads de ataque</h3>
+        <div class="attacks">
+          <button class="atk" onclick="setPayload('{&quot;theme&quot;:&quot;dark&quot;,&quot;__proto__&quot;:{&quot;isAdmin&quot;:true}}')">
+            <span class="atk-label">Prototype Pollution clásico (CVE-2019-10744 / lodash)</span>
+            {"theme":"dark","__proto__":{"isAdmin":true}}
+          </button>
+          <button class="atk" onclick="setPayload('{&quot;settings&quot;:{&quot;__proto__&quot;:{&quot;isAdmin&quot;:true,&quot;role&quot;:&quot;admin&quot;}}}')">
+            <span class="atk-label">Pollution anidada</span>
+            {"settings":{"__proto__":{"isAdmin":true,"role":"admin"}}}
+          </button>
+          <button class="atk" onclick="setPayload('{&quot;theme&quot;:&quot;light&quot;}')">
+            <span class="atk-label">Payload benigno (sin ataque)</span>
+            {"theme":"light"}
+          </button>
+        </div>
+
+        <div style="margin-top:.75rem;display:flex;gap:.5rem">
+          <button class="btn btn-warn btn-sm" onclick="resetProto()">⟳ Limpiar prototipo</button>
+          <button class="btn btn-sm" style="background:#1e2235;border:1px solid #2d3149;color:#94a3b8" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+
+      <!-- Response -->
+      <div class="card">
+        <h3>Respuesta del servidor</h3>
+        <div id="attack-result"></div>
+        <div id="resp" class="resp">— sin petición —</div>
+
+        <div style="margin-top:1rem">
+          <h3 style="margin-bottom:.5rem">¿Cómo funciona?</h3>
+          <div class="timeline">
+            <div class="t-step"><div class="t-num">1</div><span>El servidor usa una librería de merge <b>desactualizada</b> (supply chain risk)</span></div>
+            <div class="t-step"><div class="t-num">2</div><span>El merge itera con <code>for...in</code> — incluye la clave <code>__proto__</code></span></div>
+            <div class="t-step"><div class="t-num">3</div><span><code>target['__proto__']</code> devuelve <code>Object.prototype</code></span></div>
+            <div class="t-step"><div class="t-num">4</div><span>El merge recursivo escribe <code>isAdmin:true</code> en <code>Object.prototype</code></span></div>
+            <div class="t-step"><div class="t-num">5</div><span>Cualquier <code>{}</code> ahora hereda <code>isAdmin:true</code> — ¡para todos!</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code comparison -->
+    <div class="card">
+      <h3>Comparación de código — merge vulnerable vs. seguro</h3>
+      <div class="grid2">
+        <div>
+          <p style="font-size:.75rem;color:#f87171;font-weight:700;margin-bottom:.4rem">❌ custom-merge v1.0 (vulnerable — CVE-2019-XXXX)</p>
+          <div class="code"><span class="c-cm">// Simula lodash &lt; 4.17.12</span>
+<span class="c-kw">function</span> <span class="c-fn">vulnerableMerge</span>(target, source) {
+<span class="hl-bad">  <span class="c-kw">for</span> (<span class="c-kw">const</span> key <span class="c-kw">in</span> source) {   <span class="c-cm">// ← itera __proto__</span>
+    <span class="c-kw">if</span> (<span class="c-kw">typeof</span> source[key] === <span class="c-str">'object'</span>) {
+      <span class="c-kw">if</span> (!target[key]) target[key] = {};
+      <span class="c-cm">// target['__proto__'] = Object.prototype</span>
+      <span class="c-cm">// ← recursivo sobre Object.prototype!</span>
+      <span class="c-fn">vulnerableMerge</span>(target[key], source[key]);
+    } <span class="c-kw">else</span> {
+      target[key] = source[key];
+    }
+  }</span>
+}</div>
+        </div>
+        <div>
+          <p style="font-size:.75rem;color:#4ade80;font-weight:700;margin-bottom:.4rem">✅ custom-merge v2.1 (parcheado)</p>
+          <div class="code"><span class="c-cm">// Bloquea claves peligrosas</span>
+<span class="c-kw">function</span> <span class="c-fn">safeMerge</span>(target, source) {
+<span class="hl-good">  <span class="c-kw">const</span> BLOCKED = <span class="c-kw">new</span> <span class="c-fn">Set</span>([
+    <span class="c-str">'__proto__'</span>, <span class="c-str">'constructor'</span>, <span class="c-str">'prototype'</span>
+  ]);
+  <span class="c-kw">for</span> (<span class="c-kw">const</span> key <span class="c-kw">of</span> Object.<span class="c-fn">keys</span>(source)) {
+    <span class="c-kw">if</span> (BLOCKED.<span class="c-fn">has</span>(key)) <span class="c-kw">continue</span>; <span class="c-cm">// ← bloqueado</span>
+    <span class="c-kw">if</span> (<span class="c-kw">typeof</span> source[key] === <span class="c-str">'object'</span>) {
+      target[key] = Object.<span class="c-fn">create</span>(<span class="c-kw">null</span>);
+      <span class="c-fn">safeMerge</span>(target[key], source[key]);
+    } <span class="c-kw">else</span> {
+      target[key] = source[key];
+    }
+  }</span>
+}</div>
+        </div>
+      </div>
+      <div style="margin-top:.75rem" class="alert a-info">
+        <b>Supply Chain Risk:</b> El mismo patrón afectó a <b>lodash</b> (CVE-2019-10744), <b>minimist</b> (CVE-2020-7598), <b>jQuery</b> (CVE-2019-11358), <b>Shai-Hulud npm worm</b> (2025). Usar paquetes desactualizados introduce vulnerabilidades de terceros en tu código.
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+let SECURE = false;
+let token = null;
+let myUsername = null;
+
+async function init() {
+  const cfg = await fetch('/api/config').then(r=>r.json());
+  SECURE = cfg.secure;
+  const mb = document.getElementById('mode-badge');
+  mb.textContent = SECURE ? '✓ SECURE' : '⚠ VULNERABLE';
+  mb.className = 'badge ' + (SECURE ? 'b-safe' : 'b-vuln');
+  document.getElementById('mode-desc').textContent = SECURE
+    ? cfg.library : cfg.library;
+
+  document.getElementById('global-alert').innerHTML = SECURE
+    ? `<div class="alert a-success" style="margin-bottom:1rem">✓ Usando <b>${cfg.library}</b>. La clave __proto__ es bloqueada antes del merge.</div>`
+    : `<div class="alert a-danger" style="margin-bottom:1rem">⚠ Usando <b>${cfg.library}</b>. El merge itera <code>__proto__</code> sin restricción — prototype pollution posible.</div>`;
+}
+
+async function login(username) {
+  const data = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username})}).then(r=>r.json());
+  token = data.token;
+  myUsername = data.user.username;
+  document.getElementById('login-section').style.display = 'none';
+  document.getElementById('dash-section').style.display = 'block';
+  document.getElementById('session-info').textContent = `Sesión: ${data.user.username} (rol: ${data.user.role})`;
+  updateStatus();
+}
+
+async function logout() {
+  if (token) await fetch('/api/logout',{method:'POST',headers:{'Authorization':'Bearer '+token}});
+  token = null; myUsername = null;
+  document.getElementById('login-section').style.display = 'block';
+  document.getElementById('dash-section').style.display = 'none';
+}
+
+function setPayload(json) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = json;
+  document.getElementById('prefs-input').value = tmp.textContent || tmp.innerText;
+}
+
+async function sendPrefs() {
+  let body;
+  try { body = JSON.parse(document.getElementById('prefs-input').value); }
+  catch(e) { document.getElementById('attack-result').innerHTML=`<div class="alert a-danger">JSON inválido: ${e.message}</div>`; return; }
+
+  const res = await fetch('/api/prefs',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(body)});
+  const data = await res.json();
+
+  const isPolluted = data.prototype_isAdmin === true;
+  document.getElementById('attack-result').innerHTML = isPolluted
+    ? `<div class="alert a-danger">🔓 ¡Object.prototype CONTAMINADO! prototype.isAdmin = ${data.prototype_isAdmin}</div>`
+    : `<div class="alert a-success">✓ Merge ejecutado — prototipo limpio</div>`;
+
+  document.getElementById('resp').innerHTML =
+    `<span class="${res.ok?'ok':'err'}">HTTP ${res.status}</span>  POST /api/prefs\n\n` +
+    esc(JSON.stringify(data,null,2));
+
+  updateStatus(data.prototype_isAdmin);
+}
+
+async function checkAdmin() {
+  const res = await fetch('/api/admin-check',{headers:{'Authorization':'Bearer '+token}});
+  const data = await res.json();
+  document.getElementById('attack-result').innerHTML = data.isAdmin
+    ? `<div class="alert a-danger">🔓 isAdmin = <b>true</b> — ${data.reason}</div>`
+    : `<div class="alert a-success">✓ isAdmin = false — ${data.reason || 'no es admin'}</div>`;
+  document.getElementById('resp').innerHTML =
+    `<span class="${res.ok?'ok':'err'}">HTTP ${res.status}</span>  GET /api/admin-check\n\n`+esc(JSON.stringify(data,null,2));
+  updateStatus(data.prototype_polluted);
+}
+
+async function getAdminPanel() {
+  const res = await fetch('/api/admin-panel',{headers:{'Authorization':'Bearer '+token}});
+  const data = await res.json();
+  document.getElementById('attack-result').innerHTML = res.ok
+    ? `<div class="alert ${data.message?.includes('COMPROMETIDO') ? 'a-danger' : 'a-success'}">${data.message?.includes('COMPROMETIDO') ? '🔓' : '✓'} ${esc(data.message||'')}</div>`
+    : `<div class="alert a-success">🛡 ${res.status}: ${data.error}</div>`;
+  document.getElementById('resp').innerHTML =
+    `<span class="${res.ok?'ok':'err'}">HTTP ${res.status}</span>  GET /api/admin-panel\n\n`+esc(JSON.stringify(data,null,2));
+}
+
+async function resetProto() {
+  const data = await fetch('/api/reset',{method:'POST'}).then(r=>r.json());
+  document.getElementById('attack-result').innerHTML = `<div class="alert a-info">Prototipo limpiado. prototype.isAdmin = ${data.prototype_isAdmin}</div>`;
+  updateStatus(false);
+}
+
+function updateStatus(polluted) {
+  const protoVal = document.getElementById('proto-val');
+  const adminVal = document.getElementById('admin-val');
+  const sbProto = document.getElementById('sb-proto');
+  const sbAdmin = document.getElementById('sb-admin');
+  if (polluted === true) {
+    protoVal.textContent = 'true';
+    adminVal.textContent = 'SÍ';
+    sbProto.className = 'status-box sb-polluted';
+    sbAdmin.className = 'status-box sb-polluted';
+  } else if (polluted === false || polluted === undefined) {
+    protoVal.textContent = 'undefined';
+    adminVal.textContent = 'NO';
+    sbProto.className = 'status-box sb-clean';
+    sbAdmin.className = 'status-box sb-clean';
+  }
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+init();
+</script>
+</body>
+</html>

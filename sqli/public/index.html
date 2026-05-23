@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SQL Injection Lab</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
+header{background:#1a1d27;border-bottom:1px solid #2d3149;padding:1rem 1.5rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+header h1{font-size:1.05rem;font-weight:700}
+.badge{font-size:.68rem;font-weight:700;padding:.2rem .6rem;border-radius:999px;text-transform:uppercase}
+.b-owasp{background:#1e40af;color:#93c5fd}
+.b-vuln{background:#7f1d1d;color:#fca5a5}
+.b-safe{background:#14532d;color:#86efac}
+main{max-width:900px;margin:1.5rem auto;padding:0 1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+@media(max-width:640px){main{grid-template-columns:1fr}}
+.full{grid-column:1/-1}
+.card{background:#1e2235;border:1px solid #2d3149;border-radius:10px;padding:1.2rem}
+.card h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:.9rem}
+.field{margin-bottom:.7rem}
+.field label{display:block;font-size:.78rem;color:#94a3b8;margin-bottom:.3rem}
+.field input{width:100%;padding:.45rem .75rem;background:#0f1117;border:1px solid #2d3149;border-radius:6px;color:#f8fafc;font-size:.85rem;font-family:monospace}
+.field input:focus{outline:none;border-color:#4f46e5}
+.btn{padding:.45rem 1rem;border:none;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600}
+.btn-primary{background:#4f46e5;color:#fff}
+.btn-primary:hover{background:#4338ca}
+.attacks{display:flex;flex-direction:column;gap:.4rem;margin-top:.75rem}
+.atk{padding:.4rem .7rem;background:#2d1b1b;border:1px solid #7f1d1d;border-radius:6px;cursor:pointer;font-family:monospace;font-size:.75rem;color:#fca5a5;text-align:left}
+.atk:hover{background:#3f1f1f}
+.query-preview{background:#0f1117;border:1px solid #2d3149;border-radius:8px;padding:.7rem 1rem;font-family:monospace;font-size:.78rem;line-height:1.6;white-space:pre-wrap;word-break:break-all;min-height:60px;color:#94a3b8}
+.inject{color:#f87171;font-weight:700}
+.alert{padding:.6rem 1rem;border-radius:8px;font-size:.82rem;margin-bottom:.75rem}
+.a-danger{background:#2d1b1b;border:1px solid #7f1d1d;color:#fca5a5}
+.a-success{background:#1a2e1f;border:1px solid #14532d;color:#86efac}
+.a-info{background:#1e2a3f;border:1px solid #1e40af;color:#93c5fd}
+.resp{background:#0f1117;border:1px solid #2d3149;border-radius:8px;padding:.75rem 1rem;font-family:monospace;font-size:.78rem;line-height:1.5;white-space:pre-wrap;word-break:break-all;min-height:80px;color:#94a3b8}
+.ok{color:#4ade80}.err{color:#f87171}.key{color:#93c5fd}.val{color:#fde68a}
+.code{background:#0f1117;border:1px solid #2d3149;border-radius:8px;padding:.75rem 1rem;font-family:monospace;font-size:.77rem;line-height:1.6;white-space:pre-wrap;overflow-x:auto}
+.hl-bad{background:rgba(239,68,68,.15);border-left:3px solid #ef4444;display:block;padding-left:.5rem}
+.hl-good{background:rgba(74,222,128,.1);border-left:3px solid #4ade80;display:block;padding-left:.5rem}
+.c-kw{color:#c084fc}.c-fn{color:#60a5fa}.c-str{color:#fde68a}.c-cm{color:#475569;font-style:italic}
+</style>
+</head>
+<body>
+<header>
+  <h1>SQL Injection</h1>
+  <span class="badge b-owasp">OWASP A05:2025 — Injection</span>
+  <span id="mode-badge" class="badge">cargando…</span>
+  <span id="mode-desc" style="font-size:.78rem;color:#94a3b8;margin-left:.5rem"></span>
+</header>
+
+<main>
+  <!-- Login Form -->
+  <div class="card">
+    <h3>Formulario de login</h3>
+    <div id="alert-box"></div>
+    <div class="field">
+      <label>Usuario</label>
+      <input id="usr" type="text" placeholder="alice" value="alice"/>
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input id="pwd" type="text" placeholder="contraseña"/>
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()">Iniciar sesión</button>
+
+    <div style="margin-top:1rem">
+      <h3 style="margin-bottom:.5rem">Payloads de ataque</h3>
+      <div class="attacks">
+        <button class="atk" onclick="setPayload(`' OR '1'='1' --`,`cualquiera`)">Bypass auth: <b>' OR '1'='1' --</b></button>
+        <button class="atk" onclick="setPayload(`admin'--`,`x`)">Login como admin: <b>admin'--</b></button>
+        <button class="atk" onclick="setPayload(`' UNION SELECT id,username,password,credit_card,email,role FROM users--`,`x`)">UNION dump: extrae toda la tabla</button>
+        <button class="atk" onclick="setPayload(`alice`,`alice_pass_2024`)">Login legítimo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Query Preview -->
+  <div class="card">
+    <h3>Vista previa de la consulta SQL</h3>
+    <div id="query-box" class="query-preview">SELECT * FROM users WHERE username = '<span id="q-usr" class="inject">…</span>' AND password = '<span id="q-pwd" class="inject">…</span>'</div>
+    <p style="font-size:.75rem;color:#64748b;margin-top:.5rem">La entrada del usuario se inserta directamente (en modo vulnerable)</p>
+
+    <div style="margin-top:1.2rem">
+      <h3 style="margin-bottom:.5rem">Respuesta del servidor</h3>
+      <div id="resp" class="resp">— sin petición aún —</div>
+    </div>
+  </div>
+
+  <!-- Code comparison -->
+  <div class="card full">
+    <h3>Comparación de código</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div>
+        <p style="font-size:.75rem;color:#f87171;font-weight:700;margin-bottom:.4rem">❌ Vulnerable</p>
+        <div class="code"><span class="c-cm">// Concatenación directa</span>
+<span class="hl-bad"><span class="c-kw">const</span> query = <span class="c-str">`SELECT * FROM users
+WHERE username = '${'{'}username{'}'}'
+AND password = '${'{'}password{'}'}'`</span>;</span>
+<span class="c-fn">db.prepare</span>(query).<span class="c-fn">get</span>();
+<span class="c-cm">// Input: <span class="err">' OR '1'='1' --</span>
+// Query: SELECT * FROM users
+// WHERE username='' OR '1'='1'--'</span></div>
+      </div>
+      <div>
+        <p style="font-size:.75rem;color:#4ade80;font-weight:700;margin-bottom:.4rem">✅ Segura — Consulta parametrizada</p>
+        <div class="code"><span class="c-cm">// Parámetros separados del SQL</span>
+<span class="hl-good"><span class="c-kw">const</span> stmt = db.<span class="c-fn">prepare</span>(
+  <span class="c-str">`SELECT id, username, email, role
+  FROM users
+  WHERE username = ?
+  AND password = ?`</span>
+);
+stmt.<span class="c-fn">get</span>(username, password);</span>
+<span class="c-cm">// El ? nunca puede convertirse en SQL</span></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+let SECURE = false;
+const usr = document.getElementById('usr');
+const pwd = document.getElementById('pwd');
+
+async function init() {
+  const cfg = await fetch('/api/config').then(r=>r.json());
+  SECURE = cfg.secure;
+  const mb = document.getElementById('mode-badge');
+  mb.textContent = SECURE ? '✓ SECURE' : '⚠ VULNERABLE';
+  mb.className = 'badge ' + (SECURE ? 'b-safe' : 'b-vuln');
+  document.getElementById('mode-desc').textContent = SECURE
+    ? 'Consultas parametrizadas — input no altera el SQL'
+    : 'Concatenación de strings — inyectable';
+  updatePreview();
+}
+
+function updatePreview() {
+  document.getElementById('q-usr').textContent = usr.value || '…';
+  document.getElementById('q-pwd').textContent = pwd.value || '…';
+}
+
+usr.addEventListener('input', updatePreview);
+pwd.addEventListener('input', updatePreview);
+
+function setPayload(u, p) { usr.value = u; pwd.value = p; updatePreview(); }
+
+async function doLogin() {
+  const alertBox = document.getElementById('alert-box');
+  alertBox.innerHTML = '';
+  const respEl = document.getElementById('resp');
+  respEl.textContent = 'Enviando…';
+
+  const data = await fetch('/api/login', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ username: usr.value, password: pwd.value })
+  }).then(r=>r.json()).catch(e=>({error:e.message}));
+
+  if (data.success) {
+    alertBox.innerHTML = `<div class="alert a-success">✓ Login exitoso como: <b>${data.user?.username}</b> (rol: ${data.user?.role})</div>`;
+  } else if (!SECURE && !data.error) {
+    alertBox.innerHTML = `<div class="alert a-danger">✗ Login fallido — pero la inyección pudo haberse ejecutado</div>`;
+  } else {
+    alertBox.innerHTML = `<div class="alert ${data.error ? 'a-danger' : 'a-info'}">✗ ${data.error || 'Login incorrecto'}</div>`;
+  }
+
+  let out = '';
+  if (data.query) out += `<span class="key">Query ejecutada:</span>\n<span class="${SECURE?'ok':'err'}">${esc(data.query)}</span>\n\n`;
+  if (data.user)  out += `<span class="key">Usuario devuelto:</span>\n<span class="val">${esc(JSON.stringify(data.user,null,2))}</span>\n`;
+  if (data.error) out += `<span class="err">Error: ${esc(data.error)}</span>\n`;
+  if (data.note)  out += `\n<span style="color:#64748b">Nota: ${esc(data.note)}</span>`;
+  respEl.innerHTML = out || '(sin datos)';
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+init();
+</script>
+</body>
+</html>

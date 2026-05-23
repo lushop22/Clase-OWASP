@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>XSS Lab</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
+header{background:#1a1d27;border-bottom:1px solid #2d3149;padding:1rem 1.5rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+header h1{font-size:1.05rem;font-weight:700}
+.badge{font-size:.68rem;font-weight:700;padding:.2rem .6rem;border-radius:999px;text-transform:uppercase}
+.b-owasp{background:#1e40af;color:#93c5fd}.b-vuln{background:#7f1d1d;color:#fca5a5}.b-safe{background:#14532d;color:#86efac}
+main{max-width:900px;margin:1.5rem auto;padding:0 1.5rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+.card{background:#1e2235;border:1px solid #2d3149;border-radius:10px;padding:1.2rem;margin-bottom:1.5rem}
+.card h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:.9rem}
+.field{margin-bottom:.7rem}
+.field label{display:block;font-size:.78rem;color:#94a3b8;margin-bottom:.3rem}
+.field input,.field textarea{width:100%;padding:.45rem .75rem;background:#0f1117;border:1px solid #2d3149;border-radius:6px;color:#f8fafc;font-size:.85rem;font-family:monospace;resize:vertical}
+.field input:focus,.field textarea:focus{outline:none;border-color:#4f46e5}
+.row{display:flex;gap:.5rem;align-items:flex-end}
+.btn{padding:.45rem 1rem;border:none;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600;white-space:nowrap}
+.btn-primary{background:#4f46e5;color:#fff}.btn-danger{background:#7f1d1d;color:#fca5a5}.btn-sm{padding:.3rem .6rem;font-size:.75rem}
+.attacks{display:flex;flex-direction:column;gap:.4rem;margin-top:.5rem}
+.atk{padding:.4rem .7rem;background:#2d1b1b;border:1px solid #7f1d1d;border-radius:6px;cursor:pointer;font-family:monospace;font-size:.73rem;color:#fca5a5;text-align:left;line-height:1.4}
+.atk:hover{background:#3f1f1f}
+/* Board */
+.board{background:#0f1117;border:1px solid #2d3149;border-radius:8px;min-height:200px;max-height:400px;overflow-y:auto;padding:.75rem}
+.msg{background:#1e2235;border:1px solid #2d3149;border-radius:8px;padding:.6rem .9rem;margin-bottom:.6rem}
+.msg-head{display:flex;justify-content:space-between;margin-bottom:.3rem}
+.msg-author{font-size:.78rem;font-weight:700;color:#93c5fd}
+.msg-time{font-size:.72rem;color:#64748b}
+.msg-text{font-size:.85rem;line-height:1.5;word-break:break-word}
+.alert{padding:.6rem 1rem;border-radius:8px;font-size:.82rem;margin-bottom:.75rem}
+.a-danger{background:#2d1b1b;border:1px solid #7f1d1d;color:#fca5a5}
+.a-success{background:#1a2e1f;border:1px solid #14532d;color:#86efac}
+.a-info{background:#1e2a3f;border:1px solid #1e40af;color:#93c5fd}
+.code{background:#0f1117;border:1px solid #2d3149;border-radius:8px;padding:.75rem 1rem;font-family:monospace;font-size:.77rem;line-height:1.6;white-space:pre-wrap;overflow-x:auto}
+.hl-bad{background:rgba(239,68,68,.15);border-left:3px solid #ef4444;display:block;padding-left:.5rem}
+.hl-good{background:rgba(74,222,128,.1);border-left:3px solid #4ade80;display:block;padding-left:.5rem}
+.c-kw{color:#c084fc}.c-fn{color:#60a5fa}.c-str{color:#fde68a}.c-cm{color:#475569;font-style:italic}
+</style>
+</head>
+<body>
+<header>
+  <h1>Cross-Site Scripting (Stored XSS)</h1>
+  <span class="badge b-owasp">OWASP A03:2025</span>
+  <span id="mode-badge" class="badge">cargando…</span>
+  <span id="mode-desc" style="font-size:.78rem;color:#94a3b8;margin-left:.5rem"></span>
+</header>
+
+<main>
+  <div id="global-alert"></div>
+
+  <div class="grid2">
+    <!-- Post form -->
+    <div class="card">
+      <h3>Publicar comentario</h3>
+      <div class="field"><label>Nombre</label><input id="author" value="Atacante"/></div>
+      <div class="field"><label>Mensaje</label><textarea id="text" rows="3" placeholder="Escribe aquí…"></textarea></div>
+      <div class="row">
+        <button class="btn btn-primary" onclick="postMsg()">Publicar</button>
+        <button class="btn btn-danger btn-sm" onclick="clearBoard()">Limpiar foro</button>
+      </div>
+      <div style="margin-top:1rem">
+        <h3 style="margin-bottom:.5rem">Payloads XSS</h3>
+        <div class="attacks">
+          <button class="atk" onclick="setPayload('&lt;script&gt;alert(\"XSS ejecutado!\")&lt;/script&gt;')">Classic: &lt;script&gt;alert("XSS")&lt;/script&gt;</button>
+          <button class="atk" onclick="setPayload('&lt;img src=x onerror=\"document.body.style.background=\'#1a0000\'; alert(\'Página modificada!\')\"&gt;')">Defacement: &lt;img onerror=…&gt;</button>
+          <button class="atk" onclick="setPayload('&lt;img src=x onerror=\"fetch(\'/api/messages\').then(r=&gt;r.json()).then(d=&gt;alert(\'Datos robados: \'+JSON.stringify(d.messages.length)+\' mensajes\'))\"&gt;')">Data theft: roba mensajes del servidor</button>
+          <button class="atk" onclick="setPayload('&lt;b style=\"color:red;font-size:2em\"&gt;HACKED&lt;/b&gt;')">HTML injection simple</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Board -->
+    <div class="card">
+      <h3>Foro de mensajes <span id="render-note" style="font-size:.7rem;color:#64748b"></span></h3>
+      <div id="board" class="board"></div>
+    </div>
+  </div>
+
+  <!-- Code comparison -->
+  <div class="card">
+    <h3>Comparación de código</h3>
+    <div class="grid2">
+      <div>
+        <p style="font-size:.75rem;color:#f87171;font-weight:700;margin-bottom:.4rem">❌ Vulnerable — renderizado como HTML</p>
+        <div class="code"><span class="c-cm">// Backend almacena el input raw</span>
+messages.push({ author, text });
+
+<span class="c-cm">// Frontend renderiza como HTML</span>
+<span class="hl-bad">msgEl.innerHTML = msg.text;
+<span class="c-cm">// ⚠ Ejecuta cualquier &lt;script&gt; o
+//   atributo onerror inyectado</span></span></div>
+      </div>
+      <div>
+        <p style="font-size:.75rem;color:#4ade80;font-weight:700;margin-bottom:.4rem">✅ Segura — escape de entidades HTML</p>
+        <div class="code"><span class="c-cm">// Backend sanitiza antes de guardar</span>
+<span class="hl-good"><span class="c-kw">const</span> esc = s => s
+  .<span class="c-fn">replace</span>(<span class="c-str">/&amp;/g</span>, <span class="c-str">'&amp;amp;'</span>)
+  .<span class="c-fn">replace</span>(<span class="c-str">/&lt;/g</span>, <span class="c-str">'&amp;lt;'</span>)
+  .<span class="c-fn">replace</span>(<span class="c-str">/&gt;/g</span>, <span class="c-str">'&amp;gt;'</span>);
+messages.push({ author: esc(author), text: esc(text) });</span>
+
+<span class="c-cm">// Frontend puede usar innerHTML — ya es seguro
+// O usar textContent para máxima seguridad</span></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+let SECURE = false;
+
+function setPayload(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  document.getElementById('text').value = tmp.textContent || tmp.innerText;
+}
+
+async function init() {
+  const cfg = await fetch('/api/config').then(r=>r.json());
+  SECURE = cfg.secure;
+  const mb = document.getElementById('mode-badge');
+  mb.textContent = SECURE ? '✓ SECURE' : '⚠ VULNERABLE';
+  mb.className = 'badge ' + (SECURE ? 'b-safe' : 'b-vuln');
+  document.getElementById('mode-desc').textContent = SECURE
+    ? 'Input sanitizado con escape de entidades HTML'
+    : 'Input almacenado raw → renderizado como innerHTML';
+  document.getElementById('render-note').textContent = SECURE
+    ? '(se usa textContent — seguro)' : '(se usa innerHTML — vulnerable)';
+
+  if (!SECURE) {
+    document.getElementById('global-alert').innerHTML =
+      `<div class="alert a-danger" style="margin-bottom:1rem">⚠ Modo vulnerable: los mensajes se renderizan como HTML. Los scripts inyectados se ejecutarán en tu navegador.</div>`;
+  } else {
+    document.getElementById('global-alert').innerHTML =
+      `<div class="alert a-success" style="margin-bottom:1rem">✓ Modo seguro: el input es escapado antes de almacenarse. Los scripts no se ejecutan.</div>`;
+  }
+  loadMessages();
+}
+
+async function loadMessages() {
+  const data = await fetch('/api/messages').then(r=>r.json());
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  if (!data.messages.length) { board.textContent = 'Sin mensajes.'; return; }
+  data.messages.forEach(m => {
+    const el = document.createElement('div');
+    el.className = 'msg';
+    const head = document.createElement('div');
+    head.className = 'msg-head';
+    const aEl = document.createElement('span');
+    aEl.className = 'msg-author';
+    const tEl = document.createElement('span');
+    tEl.className = 'msg-time';
+    aEl.textContent = m.author;
+    tEl.textContent = m.ts;
+    head.appendChild(aEl);
+    head.appendChild(tEl);
+    const body = document.createElement('div');
+    body.className = 'msg-text';
+    if (SECURE) {
+      body.textContent = m.text; // safe
+    } else {
+      body.innerHTML = m.text;   // ← XSS fires here in vulnerable mode
+    }
+    el.appendChild(head);
+    el.appendChild(body);
+    board.appendChild(el);
+  });
+}
+
+async function postMsg() {
+  const author = document.getElementById('author').value.trim() || 'Anónimo';
+  const text   = document.getElementById('text').value.trim();
+  if (!text) return;
+  await fetch('/api/message', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ author, text })
+  });
+  document.getElementById('text').value = '';
+  loadMessages();
+}
+
+async function clearBoard() {
+  await fetch('/api/messages', { method: 'DELETE' });
+  loadMessages();
+}
+
+init();
+</script>
+</body>
+</html>

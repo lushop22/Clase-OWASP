@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OWASP Top 10 2025 — Labs</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
+header{background:#1a1d27;border-bottom:1px solid #2d3149;padding:1.5rem 2rem;text-align:center}
+header h1{font-size:1.5rem;font-weight:800;margin-bottom:.4rem}
+header p{color:#94a3b8;font-size:.88rem}
+.badges{display:flex;gap:.5rem;justify-content:center;margin-top:.75rem;flex-wrap:wrap}
+.badge{font-size:.7rem;font-weight:700;padding:.2rem .7rem;border-radius:999px;text-transform:uppercase}
+.b-owasp{background:#1e40af;color:#93c5fd}
+.b-edu{background:#7c3aed;color:#d8b4fe}
+.b-docker{background:#0891b2;color:#7dd3fc}
+main{max-width:1100px;margin:2rem auto;padding:0 1.5rem}
+.intro{background:#1e2235;border:1px solid #2d3149;border-radius:10px;padding:1.2rem 1.5rem;margin-bottom:2rem;font-size:.87rem;color:#94a3b8;line-height:1.6}
+.intro strong{color:#f8fafc}
+.port-map{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
+.pm{background:#161925;border:1px solid #2d3149;border-radius:6px;padding:.25rem .6rem;font-size:.75rem;font-family:monospace;color:#94a3b8}
+.pm b{color:#f8fafc}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.5rem}
+.card{background:#1e2235;border:1px solid #2d3149;border-radius:12px;overflow:hidden;transition:transform .15s,border-color .15s}
+.card:hover{transform:translateY(-2px);border-color:#4f46e5}
+.card-head{padding:1rem 1.2rem;display:flex;align-items:center;gap:.75rem;border-bottom:1px solid #2d3149}
+.num{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;flex-shrink:0;flex-direction:column;line-height:1.1}
+.n1{background:#1e3a5f;color:#60a5fa}
+.n2{background:#1a2e3a;color:#38bdf8}
+.n3{background:#2d1a4a;color:#c084fc}
+.n4{background:#1a3a2a;color:#4ade80}
+.n5{background:#3a2a1a;color:#fb923c}
+.num small{font-size:.55rem;opacity:.8;font-weight:500}
+.card-head h2{font-size:.95rem;font-weight:700}
+.card-head p{font-size:.73rem;color:#94a3b8;margin-top:.1rem}
+.card-head .new-badge{font-size:.6rem;font-weight:700;padding:.1rem .4rem;border-radius:999px;background:#4a1942;color:#e879f9;text-transform:uppercase;margin-left:.4rem;vertical-align:middle}
+.card-head .moved-badge{font-size:.6rem;font-weight:700;padding:.1rem .4rem;border-radius:999px;background:#1a2a10;color:#86efac;text-transform:uppercase;margin-left:.4rem;vertical-align:middle}
+.card-body{padding:.75rem 1.2rem 1.2rem}
+.card-desc{font-size:.82rem;color:#94a3b8;line-height:1.5;margin-bottom:1rem}
+.card-desc code{background:#0f1117;border:1px solid #2d3149;border-radius:4px;padding:.05rem .35rem;font-size:.78rem;color:#fde68a}
+.ports{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.port-btn{display:block;padding:.6rem .8rem;border-radius:8px;text-decoration:none;font-size:.8rem;font-weight:600;text-align:center;transition:opacity .15s}
+.port-btn:hover{opacity:.85}
+.vuln-btn{background:#2d1b1b;border:1px solid #7f1d1d;color:#f87171}
+.safe-btn{background:#1a2e1f;border:1px solid #14532d;color:#4ade80}
+.port-num{display:block;font-family:monospace;font-size:.72rem;margin-top:.15rem;opacity:.8}
+.legend{display:flex;gap:1rem;justify-content:center;margin-bottom:1.5rem;font-size:.78rem;color:#64748b;flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:.3rem}
+.dot{width:8px;height:8px;border-radius:50%}
+.dot-new{background:#e879f9}.dot-moved{background:#86efac}.dot-same{background:#60a5fa}
+footer{text-align:center;padding:2rem;color:#475569;font-size:.8rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>OWASP Top 10:2025 — Labs Interactivos</h1>
+  <p>Backend funcional + frontend para las 5 vulnerabilidades web más críticas del OWASP Top 10 2025</p>
+  <div class="badges">
+    <span class="badge b-owasp">OWASP Top 10:2025</span>
+    <span class="badge b-docker">Docker Compose</span>
+    <span class="badge b-edu">Solo uso educativo</span>
+  </div>
+</header>
+
+<main>
+  <div class="intro">
+    <strong>Instrucciones:</strong> Cada vulnerabilidad tiene <strong>dos instancias</strong>:
+    una <span style="color:#f87171">⚠ Vulnerable</span> (para practicar el ataque)
+    y una <span style="color:#4ade80">✓ Segura</span> (mitigación implementada).
+    Los backends son servidores <strong>Express.js</strong> reales — los ataques funcionan de verdad.
+    <div class="port-map" style="margin-top:.75rem">
+      <span class="pm"><b>3001/3002</b> A01 · IDOR</span>
+      <span class="pm"><b>3003/3004</b> A02 · Misconfig</span>
+      <span class="pm"><b>3005/3006</b> A03 · Supply Chain</span>
+      <span class="pm"><b>3007/3008</b> A04 · Crypto</span>
+      <span class="pm"><b>3009/3010</b> A05 · Injection</span>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><div class="dot dot-new"></div> Categoría nueva en 2025</span>
+    <span><div class="dot dot-moved"></div> Subió de posición vs 2021</span>
+    <span><div class="dot dot-same"></div> Mantiene posición</span>
+  </div>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-head">
+        <div class="num n1">A01<small>2025</small></div>
+        <div>
+          <h2>Broken Access Control <span class="moved-badge">↑ #1</span></h2>
+          <p>100% de apps testadas presentan alguna falla · Mayor nº de CVEs</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="card-desc">IDOR (Insecure Direct Object Reference): al cambiar el parámetro <code>?id=</code> en la URL se accede a perfiles, facturas o datos de otros usuarios sin ningún control.</p>
+        <div class="ports">
+          <a class="port-btn vuln-btn" href="http://localhost:3001" target="_blank">⚠ Vulnerable<span class="port-num">:3001</span></a>
+          <a class="port-btn safe-btn" href="http://localhost:3002" target="_blank">✓ Segura<span class="port-num">:3002</span></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="num n2">A02<small>2025</small></div>
+        <div>
+          <h2>Security Misconfiguration <span class="moved-badge">↑ de A05→A02</span></h2>
+          <p>100% de apps con alguna mala configuración · Sube 3 posiciones</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="card-desc">Endpoint <code>/debug</code> expuesto con env vars y contraseñas, stack traces con configuración interna, panel admin sin autenticación y CORS demasiado permisivo.</p>
+        <div class="ports">
+          <a class="port-btn vuln-btn" href="http://localhost:3003" target="_blank">⚠ Vulnerable<span class="port-num">:3003</span></a>
+          <a class="port-btn safe-btn" href="http://localhost:3004" target="_blank">✓ Segura<span class="port-num">:3004</span></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="num n3">A03<small>2025</small></div>
+        <div>
+          <h2>Software Supply Chain Failures <span class="new-badge">✦ NUEVO</span></h2>
+          <p>#1 en la encuesta comunitaria · SolarWinds, Log4Shell, Bybit 2025</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="card-desc"><strong>Prototype Pollution</strong> via librería de merge desactualizada (simula CVE-2019-10744 lodash). Un payload <code>{"__proto__":{"isAdmin":true}}</code> contamina <code>Object.prototype</code> en el servidor y escala privilegios.</p>
+        <div class="ports">
+          <a class="port-btn vuln-btn" href="http://localhost:3005" target="_blank">⚠ Vulnerable<span class="port-num">:3005</span></a>
+          <a class="port-btn safe-btn" href="http://localhost:3006" target="_blank">✓ Segura<span class="port-num">:3006</span></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="num n4">A04<small>2025</small></div>
+        <div>
+          <h2>Cryptographic Failures <span class="moved-badge">↓ de A02→A04</span></h2>
+          <p>Criptografía débil o ausente · Datos sensibles expuestos</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="card-desc">Contraseñas almacenadas con <code>MD5</code> sin sal: crackeables en &lt;1ms con rainbow tables. La versión segura usa <code>bcrypt</code> con cost=12 — infactible crackear en tiempo razonable.</p>
+        <div class="ports">
+          <a class="port-btn vuln-btn" href="http://localhost:3007" target="_blank">⚠ Vulnerable<span class="port-num">:3007</span></a>
+          <a class="port-btn safe-btn" href="http://localhost:3008" target="_blank">✓ Segura<span class="port-num">:3008</span></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="num n5">A05<small>2025</small></div>
+        <div>
+          <h2>Injection <span class="moved-badge">↓ de A03→A05</span></h2>
+          <p>100% de apps vulnerables · 14k+ CVEs de SQL Injection</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="card-desc"><strong>SQL Injection</strong>: concatenación directa de input en la query. <code>' OR '1'='1' --</code> bypasea el login; UNION attack vuelca toda la base de datos. La versión segura usa consultas parametrizadas.</p>
+        <div class="ports">
+          <a class="port-btn vuln-btn" href="http://localhost:3009" target="_blank">⚠ Vulnerable<span class="port-num">:3009</span></a>
+          <a class="port-btn safe-btn" href="http://localhost:3010" target="_blank">✓ Segura<span class="port-num">:3010</span></a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:2rem;background:#1e2235;border:1px solid #2d3149;border-radius:10px;padding:1.2rem 1.5rem;font-size:.82rem;color:#94a3b8">
+    <strong style="color:#f8fafc">OWASP Top 10:2025 completo</strong> (A06–A10 no cubiertos en estos labs):
+    <span style="margin-left:.5rem">A06 Insecure Design · A07 Authentication Failures · A08 Software/Data Integrity Failures · A09 Security Logging Failures · A10 Mishandling of Exceptional Conditions</span>
+  </div>
+</main>
+
+<footer>Solo para uso educativo y entornos controlados &nbsp;·&nbsp; OWASP Top 10:2025 — <a href="https://owasp.org/Top10/2025/" style="color:#4f46e5" target="_blank">owasp.org/Top10/2025/</a></footer>
+</body>
+</html>
