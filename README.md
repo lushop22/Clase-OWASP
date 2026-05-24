@@ -7,29 +7,62 @@ Demo educativa con backend Express.js funcional + frontend para las 5 categoría
 - Docker Engine 20+
 - Docker Compose v2
 
+## Configuración del dominio
+
+Antes de levantar los labs, editá el archivo `.env` en la raíz del proyecto:
+
+```env
+DOMAIN=owasp.local
+```
+
+Cambiá `owasp.local` por el dominio que corresponda (ej. `tudominio.com` en un servidor real). Todos los servicios y el portal usarán ese valor automáticamente.
+
+### Hosts locales (solo para desarrollo)
+
+Si usás el dominio por defecto `owasp.local`, agregá estas líneas al archivo de hosts de tu máquina:
+
+**Linux/macOS** — `/etc/hosts`  
+**Windows** — `C:\Windows\System32\drivers\etc\hosts` (abrir como Administrador)
+
+```
+127.0.0.1  portal.owasp.local
+127.0.0.1  idor-vuln.owasp.local
+127.0.0.1  idor-fixed.owasp.local
+127.0.0.1  misconfig-vuln.owasp.local
+127.0.0.1  misconfig-fixed.owasp.local
+127.0.0.1  supply-chain-vuln.owasp.local
+127.0.0.1  supply-chain-fixed.owasp.local
+127.0.0.1  crypto-vuln.owasp.local
+127.0.0.1  crypto-fixed.owasp.local
+127.0.0.1  sqli-vuln.owasp.local
+127.0.0.1  sqli-fixed.owasp.local
+```
+
 ## Levantar los labs
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
-Primera vez tarda ~3-5 min (build de imágenes). Luego abre **http://localhost:8080** para el portal.
+Primera vez tarda ~3-5 min (build de imágenes). Luego abre **http://portal.owasp.local** en el browser.
 
-## Mapa de puertos
+## Mapa de dominios
 
-| Puerto | Lab                                   | OWASP 2025 | Modo       |
-|--------|---------------------------------------|------------|------------|
-| 8080   | Portal de inicio                      | —          | —          |
-| 3001   | Broken Access Control (IDOR)          | **A01**    | Vulnerable |
-| 3002   | Broken Access Control (IDOR)          | **A01**    | Seguro     |
-| 3003   | Security Misconfiguration             | **A02**    | Vulnerable |
-| 3004   | Security Misconfiguration             | **A02**    | Seguro     |
-| 3005   | Software Supply Chain Failures        | **A03** 🆕 | Vulnerable |
-| 3006   | Software Supply Chain Failures        | **A03** 🆕 | Seguro     |
-| 3007   | Cryptographic Failures                | **A04**    | Vulnerable |
-| 3008   | Cryptographic Failures                | **A04**    | Seguro     |
-| 3009   | Injection (SQL Injection)             | **A05**    | Vulnerable |
-| 3010   | Injection (SQL Injection)             | **A05**    | Seguro     |
+Todo el tráfico entra por el **puerto 80** a través del proxy Nginx y se enruta por nombre de dominio.
+
+| Dominio                          | Lab                            | OWASP 2025 | Modo       |
+|----------------------------------|--------------------------------|------------|------------|
+| portal.`DOMAIN`                  | Portal de inicio               | —          | —          |
+| idor-vuln.`DOMAIN`               | Broken Access Control (IDOR)   | **A01**    | Vulnerable |
+| idor-fixed.`DOMAIN`              | Broken Access Control (IDOR)   | **A01**    | Seguro     |
+| misconfig-vuln.`DOMAIN`          | Security Misconfiguration      | **A02**    | Vulnerable |
+| misconfig-fixed.`DOMAIN`         | Security Misconfiguration      | **A02**    | Seguro     |
+| supply-chain-vuln.`DOMAIN`       | Software Supply Chain Failures | **A03** 🆕 | Vulnerable |
+| supply-chain-fixed.`DOMAIN`      | Software Supply Chain Failures | **A03** 🆕 | Seguro     |
+| crypto-vuln.`DOMAIN`             | Cryptographic Failures         | **A04**    | Vulnerable |
+| crypto-fixed.`DOMAIN`            | Cryptographic Failures         | **A04**    | Seguro     |
+| sqli-vuln.`DOMAIN`               | Injection (SQL Injection)      | **A05**    | Vulnerable |
+| sqli-fixed.`DOMAIN`              | Injection (SQL Injection)      | **A05**    | Seguro     |
 
 ## Vulnerabilidades y ataques
 
@@ -50,6 +83,16 @@ Primera vez tarda ~3-5 min (build de imágenes). Luego abre **http://localhost:8
 | —           | A03  | **NUEVO**: Supply Chain Failures           |
 | A02 Crypto  | A04  | Baja de A02 → A04                          |
 | A03 Inject  | A05  | Baja de A03 → A05                          |
+
+## Arquitectura
+
+```
+Browser → *.DOMAIN:80
+              ↓
+         [Nginx proxy]  ← único puerto expuesto al host
+              ↓ (ruteo por Host header)
+         Contenedor del servicio correspondiente
+```
 
 ## Detener
 
