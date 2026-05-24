@@ -1,0 +1,121 @@
+events {
+    worker_connections 1024;
+}
+
+http {
+    # ── Portal de inicio ────────────────────────────────────────
+    server {
+        listen 80;
+        server_name portal.${DOMAIN};
+        location / {
+            proxy_pass         http://portal:80;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+        }
+    }
+
+    # ── A01:2025 — Broken Access Control (IDOR) ─────────────────
+    server {
+        listen 80;
+        server_name idor-vuln.${DOMAIN};
+        location / {
+            proxy_pass         http://idor-vuln:3000;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+        }
+    }
+
+    server {
+        listen 80;
+        server_name idor-fixed.${DOMAIN};
+        location / {
+            proxy_pass         http://idor-fixed:3000;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+        }
+    }
+
+    # ── A02:2025 — Security Misconfiguration ────────────────────
+    server {
+        listen 80;
+        server_name misconfig-vuln.${DOMAIN};
+        location / {
+            proxy_pass         http://misconfig-vuln:3000;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+        }
+    }
+
+    server {
+        listen 80;
+        server_name misconfig-fixed.${DOMAIN};
+        location / {
+            proxy_pass         http://misconfig-fixed:3000;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+        }
+    }
+
+    # ── A03:2025 — Software Supply Chain Failures ───────────────
+    server {
+        listen 80;
+        server_name supply-chain-vuln.${DOMAIN};
+        location / {
+            proxy_pass         http://supply-chain-vuln:3000;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+        }
+    }
+
+    server {
+        listen 80;
+        server_name supply-chain-fixed.${DOMAIN};
+        location / {
+            proxy_pass         http://supply-chain-fixed:3000;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+        }
+    }
+
+    # ── A04:2025 — Cryptographic Failures ───────────────────────
+    server {
+        listen 80;
+        server_name crypto-vuln.${DOMAIN};
+        location / {
+            proxy_pass         http://crypto-vuln:3000;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+        }
+    }
+
+    server {
+        listen 80;
+        server_name crypto-fixed.${DOMAIN};
+        location / {
+            proxy_pass         http://crypto-fixed:3000;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+        }
+    }
+
+    # ── A05:2025 — Injection (SQL Injection) ────────────────────
+    server {
+        listen 80;
+        server_name sqli-vuln.${DOMAIN};
+        location / {
+            proxy_pass         http://sqli-vuln:3000;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+        }
+    }
+
+    server {
+        listen 80;
+        server_name sqli-fixed.${DOMAIN};
+        location / {
+            proxy_pass         http://sqli-fixed:3000;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+        }
+    }
+}

@@ -70,11 +70,11 @@ footer{text-align:center;padding:2rem;color:#475569;font-size:.8rem}
     y una <span style="color:#4ade80">✓ Segura</span> (mitigación implementada).
     Los backends son servidores <strong>Express.js</strong> reales — los ataques funcionan de verdad.
     <div class="port-map" style="margin-top:.75rem">
-      <span class="pm"><b>idor-vuln/idor-fixed</b>.owasp.local</span>
-      <span class="pm"><b>misconfig-vuln/misconfig-fixed</b>.owasp.local</span>
-      <span class="pm"><b>supply-chain-vuln/supply-chain-fixed</b>.owasp.local</span>
-      <span class="pm"><b>crypto-vuln/crypto-fixed</b>.owasp.local</span>
-      <span class="pm"><b>sqli-vuln/sqli-fixed</b>.owasp.local</span>
+      <span class="pm"><b>idor-vuln/idor-fixed</b>.${DOMAIN}</span>
+      <span class="pm"><b>misconfig-vuln/misconfig-fixed</b>.${DOMAIN}</span>
+      <span class="pm"><b>supply-chain-vuln/supply-chain-fixed</b>.${DOMAIN}</span>
+      <span class="pm"><b>crypto-vuln/crypto-fixed</b>.${DOMAIN}</span>
+      <span class="pm"><b>sqli-vuln/sqli-fixed</b>.${DOMAIN}</span>
     </div>
   </div>
 
@@ -97,8 +97,8 @@ footer{text-align:center;padding:2rem;color:#475569;font-size:.8rem}
       <div class="card-body">
         <p class="card-desc">IDOR (Insecure Direct Object Reference): al cambiar el parámetro <code>?id=</code> en la URL se accede a perfiles, facturas o datos de otros usuarios sin ningún control.</p>
         <div class="ports">
-          <a class="port-btn vuln-btn" href="http://idor-vuln.owasp.local" target="_blank">⚠ Vulnerable<span class="port-num">idor-vuln.owasp.local</span></a>
-          <a class="port-btn safe-btn" href="http://idor-fixed.owasp.local" target="_blank">✓ Segura<span class="port-num">idor-fixed.owasp.local</span></a>
+          <a class="port-btn vuln-btn" href="http://idor-vuln.${DOMAIN}" target="_blank">⚠ Vulnerable<span class="port-num">idor-vuln.${DOMAIN}</span></a>
+          <a class="port-btn safe-btn" href="http://idor-fixed.${DOMAIN}" target="_blank">✓ Segura<span class="port-num">idor-fixed.${DOMAIN}</span></a>
         </div>
       </div>
     </div>
@@ -114,8 +114,8 @@ footer{text-align:center;padding:2rem;color:#475569;font-size:.8rem}
       <div class="card-body">
         <p class="card-desc">Endpoint <code>/debug</code> expuesto con env vars y contraseñas, stack traces con configuración interna, panel admin sin autenticación y CORS demasiado permisivo.</p>
         <div class="ports">
-          <a class="port-btn vuln-btn" href="http://misconfig-vuln.owasp.local" target="_blank">⚠ Vulnerable<span class="port-num">misconfig-vuln.owasp.local</span></a>
-          <a class="port-btn safe-btn" href="http://misconfig-fixed.owasp.local" target="_blank">✓ Segura<span class="port-num">misconfig-fixed.owasp.local</span></a>
+          <a class="port-btn vuln-btn" href="http://misconfig-vuln.${DOMAIN}" target="_blank">⚠ Vulnerable<span class="port-num">misconfig-vuln.${DOMAIN}</span></a>
+          <a class="port-btn safe-btn" href="http://misconfig-fixed.${DOMAIN}" target="_blank">✓ Segura<span class="port-num">misconfig-fixed.${DOMAIN}</span></a>
         </div>
       </div>
     </div>
@@ -131,8 +131,8 @@ footer{text-align:center;padding:2rem;color:#475569;font-size:.8rem}
       <div class="card-body">
         <p class="card-desc"><strong>Prototype Pollution</strong> via librería de merge desactualizada (simula CVE-2019-10744 lodash). Un payload <code>{"__proto__":{"isAdmin":true}}</code> contamina <code>Object.prototype</code> en el servidor y escala privilegios.</p>
         <div class="ports">
-          <a class="port-btn vuln-btn" href="http://supply-chain-vuln.owasp.local" target="_blank">⚠ Vulnerable<span class="port-num">supply-chain-vuln.owasp.local</span></a>
-          <a class="port-btn safe-btn" href="http://supply-chain-fixed.owasp.local" target="_blank">✓ Segura<span class="port-num">supply-chain-fixed.owasp.local</span></a>
+          <a class="port-btn vuln-btn" href="http://supply-chain-vuln.${DOMAIN}" target="_blank">⚠ Vulnerable<span class="port-num">supply-chain-vuln.${DOMAIN}</span></a>
+          <a class="port-btn safe-btn" href="http://supply-chain-fixed.${DOMAIN}" target="_blank">✓ Segura<span class="port-num">supply-chain-fixed.${DOMAIN}</span></a>
         </div>
       </div>
     </div>
@@ -148,8 +148,8 @@ footer{text-align:center;padding:2rem;color:#475569;font-size:.8rem}
       <div class="card-body">
         <p class="card-desc">Contraseñas almacenadas con <code>MD5</code> sin sal: crackeables en &lt;1ms con rainbow tables. La versión segura usa <code>bcrypt</code> con cost=12 — infactible crackear en tiempo razonable.</p>
         <div class="ports">
-          <a class="port-btn vuln-btn" href="http://crypto-vuln.owasp.local" target="_blank">⚠ Vulnerable<span class="port-num">crypto-vuln.owasp.local</span></a>
-          <a class="port-btn safe-btn" href="http://crypto-fixed.owasp.local" target="_blank">✓ Segura<span class="port-num">crypto-fixed.owasp.local</span></a>
+          <a class="port-btn vuln-btn" href="http://crypto-vuln.${DOMAIN}" target="_blank">⚠ Vulnerable<span class="port-num">crypto-vuln.${DOMAIN}</span></a>
+          <a class="port-btn safe-btn" href="http://crypto-fixed.${DOMAIN}" target="_blank">✓ Segura<span class="port-num">crypto-fixed.${DOMAIN}</span></a>
         </div>
       </div>
     </div>
@@ -165,8 +165,8 @@ footer{text-align:center;padding:2rem;color:#475569;font-size:.8rem}
       <div class="card-body">
         <p class="card-desc"><strong>SQL Injection</strong>: concatenación directa de input en la query. <code>' OR '1'='1' --</code> bypasea el login; UNION attack vuelca toda la base de datos. La versión segura usa consultas parametrizadas.</p>
         <div class="ports">
-          <a class="port-btn vuln-btn" href="http://sqli-vuln.owasp.local" target="_blank">⚠ Vulnerable<span class="port-num">sqli-vuln.owasp.local</span></a>
-          <a class="port-btn safe-btn" href="http://sqli-fixed.owasp.local" target="_blank">✓ Segura<span class="port-num">sqli-fixed.owasp.local</span></a>
+          <a class="port-btn vuln-btn" href="http://sqli-vuln.${DOMAIN}" target="_blank">⚠ Vulnerable<span class="port-num">sqli-vuln.${DOMAIN}</span></a>
+          <a class="port-btn safe-btn" href="http://sqli-fixed.${DOMAIN}" target="_blank">✓ Segura<span class="port-num">sqli-fixed.${DOMAIN}</span></a>
         </div>
       </div>
     </div>
